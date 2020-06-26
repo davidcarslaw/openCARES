@@ -5,7 +5,7 @@
 
 For the main CARES website, see <https://cares-project.eu/>.
 
-<img src="inst/CARES_logo.jpeg" alt="openair logo" width="35%" />
+<img src="inst/CARES_logo.jpeg" alt="CARES logo" width="35%" class="center"/>
 
 The **openCARES** R package contains tools to assist with the analysis
 of vehicle emission remote sensing data. In time, these tools will
