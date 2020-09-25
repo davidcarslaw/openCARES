@@ -29,4 +29,4 @@ knitr::opts_chunk$set(
 
 <img src="inst/CARES_logo.jpeg" alt="CARES logo" width="35%" class="center"/>
 
-The **openCARES** R package contains tools to assist with the analysis of vehicle emission remote sensing data. In time, these tools will include approaches to analyse traditional vehicle emission remote sesning, plume-chase and point sampling. The tools focus on the development of new insights from potenilally complex data sets that will assist both those working on teh development of these technologies and end users e.g. city authorities who want to better-understand real-world emissions.
+The **openCARES** R package contains tools to assist with the analysis of vehicle emission remote sensing data. In time, these tools will include approaches to analyse traditional vehicle emission remote sensing, plume-chase and point sampling. The tools focus on the development of new insights from potentially complex data sets that will assist both those working on the development of these technologies and end users e.g. city authorities who want to better-understand real-world emissions.
