@@ -13,4 +13,7 @@ RoxygenNote: 7.1.1
 Depends: 
     R (>= 2.10),
     dplyr,
-    ggplot2
+    tidyr,
+    stringr,
+    ggplot2,
+    mgcv

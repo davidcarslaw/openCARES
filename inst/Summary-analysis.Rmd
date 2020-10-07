@@ -1,0 +1,86 @@
+---
+title: "Summary Analysis of Remote Emission Sensing Data"
+author: CARES project
+date: "`r paste('Date:', format(Sys.time(), '%d %B, %Y'))`"
+output:
+  bookdown::html_document2: 
+    theme: flatly
+    toc: yes
+    toc_float:
+      collapsed: false
+#bibliography: DCC-refs.bib
+link-citations: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(openCARES)
+library(tidyverse)
+library(gt)
+theme_set(theme_minimal())
+```
+
+<center>
+
+![](CARES_logo.jpeg){width="300"}
+
+</center>
+
+# Introduction
+
+## Background
+
+This document provides a detailed summary of remote emission sensing (RES) data as part of the [CARES](https://cares-project.eu) project.
+
+## Aims
+
+The analysis of RES data can be challenging given the complexity and typical size of the data collected during experimental campaigns. Even within the small community of researchers and practitioners that typically conduct experiments, there is a wide variation in the analysis approaches used and their consistency. With that in mind, this document has the following aims:
+
+1.  To provide a reliable and automated way of presenting key summary data and plots from RES campaigns.
+
+2.  Adopt 'modern' data analysis approaches using [R Statistical Software](https://www.r-project.org) and automated report production using [Rmarkdown](https://rmarkdown.rstudio.com). These approaches offer many advantages over tradional ways of analysing data and presenting it.
+
+3.  To present common numerical and graphical outputs that help to interpret data from RES campaigns.
+
+The analysis software and the underlying code that produced this document are part of a R package called `openCARES`. The package is available as a GitHub repository and all code is managed under a version control system. The approach means that all changes are recorded and that members of the CARES team can work collaboratively to develop the analysis capabilities over time.
+
+Currently, this document is based on early data collected as part of the CONOX project consisting of about 100,000 measurements, which is similar to the aims of the City Demonstrations as part of the CARES project.
+
+# Numerical summaries
+
+## Measurement conditions  {.tabset}
+
+### All data
+
+```{r}
+conox %>% 
+  filter(SAFlag != "X",
+         VSPStatus != "X"
+       ) %>% 
+  summarise(`Speed (kph)` = mean(SpeedKPH, na.rm = TRUE),
+            VSP = mean(VSP, na.rm = TRUE),
+            n = n()) %>% 
+  gt() %>% 
+   fmt_number(
+    columns = everything(),
+    suffixing = TRUE
+  )
+```
+
+### By site
+
+```{r}
+conox %>% 
+  filter(SAFlag != "X",
+         VSPStatus != "X"
+       ) %>% 
+  group_by(Site) %>% 
+  summarise(`Speed (kph)` = mean(SpeedKPH, na.rm = TRUE),
+            VSP = mean(VSP, na.rm = TRUE),
+            n = n()) %>% 
+  gt() %>% 
+   fmt_number(
+    columns = 2:4,
+    suffixing = TRUE
+  )
+```
