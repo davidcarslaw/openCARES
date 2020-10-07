@@ -17,6 +17,7 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 library(openCARES)
 library(tidyverse)
 library(gt)
+library(DT)
 theme_set(theme_minimal())
 ```
 
@@ -38,9 +39,11 @@ The analysis of RES data can be challenging given the complexity and typical siz
 
 1.  To provide a reliable and automated way of presenting key summary data and plots from RES campaigns.
 
-2.  Adopt 'modern' data analysis approaches using [R Statistical Software](https://www.r-project.org) and automated report production using [Rmarkdown](https://rmarkdown.rstudio.com). These approaches offer many advantages over tradional ways of analysing data and presenting it.
+2.  Adopt 'modern' data analysis approaches using [R Statistical Software](https://www.r-project.org) and automated report production using [Rmarkdown](https://rmarkdown.rstudio.com).
 
-3.  To present common numerical and graphical outputs that help to interpret data from RES campaigns.
+3.  These approaches offer many advantages over traditional ways of analysing data and presenting it. For example, allowing for detailed data to be presented in a compact way that can easily be filtered by the user, and the use of 'tabs' to better structure the output.
+
+4.  To present common numerical and graphical outputs that help to interpret data from RES campaigns.
 
 The analysis software and the underlying code that produced this document are part of a R package called `openCARES`. The package is available as a GitHub repository and all code is managed under a version control system. The approach means that all changes are recorded and that members of the CARES team can work collaboratively to develop the analysis capabilities over time.
 
@@ -84,3 +87,130 @@ conox %>%
     suffixing = TRUE
   )
 ```
+
+## Emission summaries  {.tabset}
+
+All data presented as fuel-specific emission factors i.e. g pollutant per kg fuel.
+
+### All data
+
+```{r}
+conox %>% 
+  filter(
+       ) %>% 
+  summarise(NOx = mean(NOx_gpkg, na.rm = TRUE),
+            NO = mean(NO_gpkg, na.rm = TRUE),
+            CO = mean(CO_gpkg, na.rm = TRUE),
+            HC = mean(HC_gpkg, na.rm = TRUE),
+            UV_smoke = mean(UV_Smoke_gpkg, na.rm = TRUE),
+            n = n()) %>% 
+  gt() %>% 
+   fmt_number(
+    columns = everything(),
+    suffixing = TRUE
+  )
+```
+
+### All fuel
+
+```{r}
+conox %>% 
+  filter(
+       ) %>% 
+  group_by(FuelType) %>% 
+  summarise(NOx = mean(NOx_gpkg, na.rm = TRUE),
+            NO = mean(NO_gpkg, na.rm = TRUE),
+            CO = mean(CO_gpkg, na.rm = TRUE),
+            HC = mean(HC_gpkg, na.rm = TRUE),
+            UV_smoke = mean(UV_Smoke_gpkg, na.rm = TRUE),
+            n = n()) %>% 
+  gt() %>% 
+   fmt_number(
+    columns = 2:7,
+    suffixing = TRUE
+  )
+```
+
+## Detailed pollutant summaries  {.tabset}
+
+### NO~x~
+
+The table below shows the mean and 95% confidence interval in the mean is given.
+
+```{r}
+conox %>% 
+    filter(FuelType != "NO DATA",
+    ) %>% 
+    group_by(MODEL_NAME, FuelType, EuroStandard) %>% 
+    summarise(bootMeanDF(NOx_gpkg)) %>% 
+  mutate(mean = round(mean, 2),
+         min = round(min, 2),
+         max = round(max, 2)) %>% 
+  datatable(filter = "top",
+            extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel', 'pdf', 'print'))
+  )
+```
+
+### CO
+
+The table below shows the mean and 95% confidence interval in the mean is given.
+
+```{r}
+conox %>% 
+    filter(FuelType != "NO DATA",
+    ) %>% 
+    group_by(MODEL_NAME, FuelType, EuroStandard) %>% 
+    summarise(bootMeanDF(CO_gpkg)) %>% 
+  mutate(mean = round(mean, 2),
+         min = round(min, 2),
+         max = round(max, 2)) %>% 
+  datatable(filter = "top",
+            extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel', 'pdf', 'print'))
+    )
+```
+
+### HC
+
+The table below shows the mean and 95% confidence interval in the mean is given.
+
+```{r}
+conox %>% 
+    filter(FuelType != "NO DATA",
+    ) %>% 
+    group_by(MODEL_NAME, FuelType, EuroStandard) %>% 
+    summarise(bootMeanDF(HC_gpkg)) %>% 
+  mutate(mean = round(mean, 2),
+         min = round(min, 2),
+         max = round(max, 2)) %>% 
+  datatable(filter = "top",
+            extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel', 'pdf', 'print'))
+    )
+```
+
+### UV smoke
+
+The table below shows the mean and 95% confidence interval in the mean is given.
+
+```{r}
+conox %>% 
+    filter(FuelType != "NO DATA",
+    ) %>% 
+    group_by(MODEL_NAME, FuelType, EuroStandard) %>% 
+    summarise(bootMeanDF(UV_Smoke_gpkg)) %>% 
+  mutate(mean = round(mean, 2),
+         min = round(min, 2),
+         max = round(max, 2)) %>% 
+  datatable(filter = "top",
+            extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel', 'pdf', 'print'))
+    )
+```
+
+### 
