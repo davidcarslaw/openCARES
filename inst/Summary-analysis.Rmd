@@ -67,7 +67,14 @@ conox %>%
    fmt_number(
     columns = everything(),
     suffixing = TRUE
-  )
+  ) %>% 
+  tab_options(table.align = "left")
+```
+
+```{r fig.width=5,fig.height=4.5,fig.cap='Density plot of all VSP data.'}
+ggplot(conox, aes(VSP)) + 
+  geom_density(fill = "dodgerblue") + 
+  xlim(-10, 30)
 ```
 
 ### By site
@@ -85,7 +92,16 @@ conox %>%
    fmt_number(
     columns = 2:4,
     suffixing = TRUE
-  )
+  ) %>% 
+  tab_options(table.align = "left")
+```
+
+```{r fig.width=5,fig.height=4.5,fig.cap='Density plot of all VSP data, split by site.'}
+ggplot(conox, aes(VSP, fill = Site, colour = Site)) + 
+  geom_density() + 
+  facet_wrap(vars(Site)) +
+  theme(legend.position = "none") +
+  xlim(-10, 30)
 ```
 
 ## Emission summaries  {.tabset}
@@ -108,10 +124,11 @@ conox %>%
    fmt_number(
     columns = everything(),
     suffixing = TRUE
-  )
+  ) %>% 
+  tab_options(table.align = "left")
 ```
 
-### All fuel
+### By fuel
 
 ```{r}
 conox %>% 
@@ -128,7 +145,8 @@ conox %>%
    fmt_number(
     columns = 2:7,
     suffixing = TRUE
-  )
+  ) %>% 
+  tab_options(table.align = "left")
 ```
 
 ## Detailed pollutant summaries  {.tabset}
