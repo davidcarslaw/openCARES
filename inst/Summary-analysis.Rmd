@@ -18,6 +18,7 @@ library(openCARES)
 library(tidyverse)
 library(gt)
 library(DT)
+library(plotly)
 theme_set(theme_minimal())
 ```
 
@@ -51,7 +52,25 @@ Currently, this document is based on early data collected as part of the CONOX p
 
 # Numerical summaries
 
-## Measurement conditions  {.tabset}
+## Vehicle numbers
+
+An example of a way in which to present vehicles samples is shown in Figure \@ref(fig:type-fuel).
+
+```{r type-fuel,fig.cap='Numbers of vehicle by main vehicle and fuel type. Click on the key to select specific segments.'}
+out <- conox %>% 
+  filter(FuelType != "NO DATA", VehicleCategory != "No data") %>% 
+  mutate(label = paste0(VehicleCategory, " (", FuelType, ")"),
+         label = fct_lump_prop(label, prop = 0.01)) %>% 
+  count(label)
+
+fig <- out %>% 
+  plot_ly(labels = ~label, values = ~n) %>% 
+  add_pie(hole = 0.6) %>% 
+  layout(title = "Vehicle type summary",  showlegend = TRUE)
+fig
+```
+
+## Measurement conditions {.tabset}
 
 ### All data
 
@@ -104,7 +123,7 @@ ggplot(conox, aes(VSP, fill = Site, colour = Site)) +
   xlim(-10, 30)
 ```
 
-## Emission summaries  {.tabset}
+## Emission summaries {.tabset}
 
 All data presented as fuel-specific emission factors i.e. g pollutant per kg fuel.
 
@@ -149,7 +168,7 @@ conox %>%
   tab_options(table.align = "left")
 ```
 
-## Detailed pollutant summaries  {.tabset}
+## Detailed pollutant summaries {.tabset}
 
 ### NO~x~
 

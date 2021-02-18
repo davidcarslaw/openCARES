@@ -5,8 +5,8 @@
 #'
 #' @param rs_data A data frame input.
 #' @import mgcv
-#' @importFrom("stats", "na.omit", "quantile")
-#' @importFrom("utils", "data")
+#' @importFrom stats na.omit quantile
+#' @importFrom utils data
 #' @return
 #' @export
 #'
