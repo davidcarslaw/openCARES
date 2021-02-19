@@ -19,6 +19,7 @@ library(tidyverse)
 library(gt)
 library(DT)
 library(plotly)
+library(RColorBrewer)
 theme_set(theme_minimal())
 ```
 
@@ -251,3 +252,39 @@ conox %>%
 ```
 
 ### 
+
+## Vehicle manufacturers {.tabset}
+
+### PC gasoline
+
+```{r}
+manu <- conox %>%
+  filter(FuelType == "PETROL", VehicleCategory == "PC") %>%
+  select(VehicleMake, contains("gpkg")) %>%
+  drop_na(VehicleMake) %>% 
+  mutate(Manufacturer = fct_lump_prop(VehicleMake, prop = 0.01)) %>%
+  select(-starts_with("UV")) %>%
+  group_by(Manufacturer) %>%
+  summarise(across(contains("gpkg"), mean, na.rm = T),
+            n = n()) %>%
+  arrange(CO_gpkg) %>%
+  mutate(n = n / sum(n),
+         w = cumsum(n),
+         wm = w - n, 
+         wt = wm + (w - wm)/2) %>%
+  select(-starts_with(c("HC", "NO", "NO2", "NOx", "NH3")))
+
+mycolours <- colorRampPalette(brewer.pal(12, "Paired"))(25)
+
+ggplot(manu, aes(ymin = 0)) + 
+  geom_rect(aes(xmin = wm, xmax = w, ymax = CO_gpkg, fill = Manufacturer), 
+            color = "white") +
+  geom_text(aes(x = wt, y = CO_gpkg, label = Manufacturer), 
+            color = "black", angle = 90, nudge_y = 3) +
+  ggpubr::grids() + 
+  scale_x_continuous(labels = scales::label_percent()) + 
+  scale_y_continuous(expand = expansion(mult = c(0,.10))) + 
+  theme(legend.position = "none") + 
+  labs(x = "Fleet share", y = openair::quickText("Fuel-specific CO (g/kg)")) + 
+  scale_fill_manual(values = mycolours)
+```
