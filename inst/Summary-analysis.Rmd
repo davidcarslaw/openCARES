@@ -287,4 +287,6 @@ ggplot(manu, aes(ymin = 0)) +
   theme(legend.position = "none") + 
   labs(x = "Fleet share", y = openair::quickText("Fuel-specific CO (g/kg)")) + 
   scale_fill_manual(values = mycolours)
+
+# scale_fill_brewer
 ```
