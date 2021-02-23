@@ -19,6 +19,9 @@ library(tidyverse)
 library(gt)
 library(DT)
 library(plotly)
+library(RColorBrewer)
+library(openair)
+library(treemap)
 theme_set(theme_minimal())
 ```
 
@@ -50,9 +53,11 @@ The analysis software and the underlying code that produced this document are pa
 
 Currently, this document is based on early data collected as part of the CONOX project consisting of about 100,000 measurements, which is similar to the aims of the City Demonstrations as part of the CARES project.
 
-# Numerical summaries
+# Vehicle numbers
 
-## Vehicle numbers
+This section focuses on the share of measurements per vehicle class, fuel type, Euro standard and so on. 
+
+## Vehicle and fuel type
 
 An example of a way in which to present vehicles samples is shown in Figure \@ref(fig:type-fuel).
 
@@ -70,59 +75,224 @@ fig <- out %>%
 fig
 ```
 
-## Measurement conditions {.tabset}
+## Euro standard
+
+```{r euro,fig.cap='Euro standard share by main vehicle and fuel type.'}
+
+euro_comp <- conox %>%
+  filter(FuelType != "NO DATA", VehicleCategory != "No data", EuroStandard != "No data") %>%
+  mutate(label = paste0(VehicleCategory, " (", FuelType, ")"),
+         label = fct_lump_prop(label, prop = 0.01)) %>%
+  group_by(label, EuroStandard) %>%
+  count(EuroStandard)
+  
+ggplot(euro_comp, aes(x = label, y = n, fill = EuroStandard)) + 
+  geom_bar(position="fill", stat="identity") +
+  labs(x = "Vehicle and fuel type", y = "Proportion", fill = "Euro standard") + 
+  scale_fill_brewer(palette = "Paired") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+```
+
+## Manufacturers {.tabset}
+
+Manufacturer composition for petrol and diesel vehicles. The size of each rectangle is proportional to the share of each manufacturer / manufacturer group. 
+
+### Petrol vehicles 
+
+```{r manu_petrol,fig.cap=''}
+
+conox <- conox %>%
+  mutate(
+    mgrp = case_when(
+      VehicleMake %in% c("Aixam") ~ "A6",
+      VehicleMake %in% c("Aston Martin") ~ "AM",
+      VehicleMake %in% c("BMC") ~ "BC",
+      VehicleMake %in% c("Bedford") ~ "BF",
+      VehicleMake %in% c("BMW", "Mini", "Mini Ukl") ~ "BMW",
+      VehicleMake %in% c("Buick") ~ "BU",
+      VehicleMake %in% c("Cadillac") ~ "CA",
+      VehicleMake %in% c("Clean Motion") ~ "CLE",
+      VehicleMake %in% c("DAF") ~ "DA",
+      VehicleMake %in% c("Mercedes-AMG" , "Mercedes", "Smart Fortwo", "Smaet", "Daimler", "Mercedes-Benz") ~ "DAI",
+      VehicleMake %in% c("Ducati") ~ "DC",
+      VehicleMake %in% c("Dodge") ~ "DD",
+      VehicleMake %in% c("Daewoo") ~ "DW",
+      VehicleMake %in% c("Alfa", "Chrysler", "Fiat", "Iveco", "Jeep", "Lancia",
+                         "Maserati", "Alfa Romeo", "Abarth") ~ "FCA",
+      VehicleMake %in% c("Ford") ~ "FRD",
+      VehicleMake %in% c("Chevrolet", "GMC", "Opel", "Vauxhall") ~ "GEM",
+      VehicleMake %in% c("Harley-Davidson") ~ "HD",
+      VehicleMake %in% c("Hyundai", "Kia") ~ "HMC",
+      VehicleMake %in% c("Honda") ~ "HON",
+      VehicleMake %in% c("Irisbus") ~ "IRB",
+      VehicleMake %in% c("Irizar") ~ "IRI",
+      VehicleMake %in% c("Isuzu") ~ "ISU",
+      VehicleMake %in% c("Kymco") ~ "KJ",
+      VehicleMake %in% c("Kawasaki") ~ "KK",
+      VehicleMake %in% c("K-Setra", "Setra") ~ "KS",
+      VehicleMake %in% c("London Taxis Int") ~ "LT",
+      VehicleMake %in% c("MAN") ~ "MA",
+      VehicleMake %in% c("Mazda") ~ "MAZ",
+      VehicleMake %in% c("MG ZR") ~ "MG",
+      VehicleMake %in% c("Mitsubishi") ~ "MH",
+      VehicleMake %in% c("Neoplan") ~ "NP",
+      VehicleMake %in% c("Pontiac") ~ "PO",
+      VehicleMake %in% c("Citroen", "DS", "Peugeot") ~ "PSA",
+      VehicleMake %in% c("Proton") ~ "PT",
+      VehicleMake %in% c("PGO") ~ "PY",
+      VehicleMake %in% c("Quattro") ~ "QU",
+      VehicleMake %in% c("Dacia", "Infiniti", "Nissan", "Renault", "Reult") ~ "RNA",
+      VehicleMake %in% c("Rover") ~ "RO",
+      VehicleMake %in% c("Saab") ~ "SA",
+      VehicleMake %in% c("Scania") ~ "SC",
+      VehicleMake %in% c("Subaru") ~ "SH",
+      VehicleMake %in% c("Solaris") ~ "SOL",
+      VehicleMake %in% c("Ssangyong") ~ "SSA",
+      VehicleMake %in% c("Suzuki") ~ "SUZ",
+      VehicleMake %in% c("Tesla") ~ "T-",
+      VehicleMake %in% c("Tristar") ~ "T2",
+      VehicleMake %in% c("Jaguar", "Land Rover", "Jaguar Land Rover Limit") ~ "TAT",
+      VehicleMake %in% c("Daihatsu", "Lexus", "Toyota") ~ "TOY",
+      VehicleMake %in% c("Triumph", "TRIUMPH") ~ "TR",
+      VehicleMake %in% c("Volvo") ~ "VLO",
+      VehicleMake %in% c("Vespa") ~ "VP",
+      VehicleMake %in% c("Audi", "Bentley", "Lamborghini", "Porsche", "Seat", "Skoda", "Volkswagen") ~ "VWG",
+      VehicleMake %in% c("VAZ") ~ "VZ",
+      VehicleMake %in% c("Yamaha") ~ "YA",
+      TRUE ~ NA_character_))
+
+manu_comp <- conox %>%
+  mutate(mgrp = fct_lump_prop(mgrp, prop = 0.01)) %>%
+  group_by(VehicleMake, mgrp, FuelType) %>%
+  count(VehicleMake) 
+
+fig <- manu_comp %>%
+  filter(FuelType == "PETROL") %>%
+  treemap(manu_comp, 
+        index = c("mgrp", "VehicleMake"),
+        vSize = "n",
+        type = "index",
+        palette = "Paired",
+        align.labels=list(c("center", "center"), c("left", "top")))
+```
+
+### Diesel vehicles
+
+```{r manu_diesel,fig.cap=''}
+fig <- manu_comp %>%
+  filter(FuelType == "DIESEL") %>%
+  treemap(manu_comp, 
+        index = c("mgrp", "VehicleMake"),
+        vSize = "n",
+        type = "index",
+        palette = "Paired",
+        align.labels=list(c("center", "center"), c("left", "top")))
+```
+
+# Site conditions
+
+Road grade etc. 
+
+# Environmental conditions
+
+## Meteorological data{.tabset}
 
 ### All data
 
-```{r}
-conox %>% 
-  filter(SAFlag != "X",
-         VSPStatus != "X"
-       ) %>% 
-  summarise(`Speed (kph)` = mean(SpeedKPH, na.rm = TRUE),
-            VSP = mean(VSP, na.rm = TRUE),
-            n = n()) %>% 
-  gt() %>% 
-   fmt_number(
-    columns = everything(),
-    suffixing = TRUE
-  ) %>% 
-  tab_options(table.align = "left")
-```
-
-```{r fig.width=5,fig.height=4.5,fig.cap='Density plot of all VSP data.'}
-ggplot(conox, aes(VSP)) + 
-  geom_density(fill = "dodgerblue") + 
-  xlim(-10, 30)
-```
-
 ### By site
 
+## Emissions as a function of ambient temperature
+
+# Vehicle emissions
+
+## Average emissions by Euro standard {.tabset}
+
+### CO
+
 ```{r}
-conox %>% 
-  filter(SAFlag != "X",
-         VSPStatus != "X"
-       ) %>% 
-  group_by(Site) %>% 
-  summarise(`Speed (kph)` = mean(SpeedKPH, na.rm = TRUE),
-            VSP = mean(VSP, na.rm = TRUE),
-            n = n()) %>% 
-  gt() %>% 
-   fmt_number(
-    columns = 2:4,
-    suffixing = TRUE
-  ) %>% 
-  tab_options(table.align = "left")
+euro <- conox %>%
+  filter(FuelType != "NO DATA", VehicleCategory != "No data", EuroStandard != "No data") %>%
+  mutate(label = paste0(VehicleCategory, " (", FuelType, ")"),
+         label = fct_lump_prop(label, prop = 0.01)) %>%
+  select(label, contains("gpkg"), -starts_with("UV"), EuroStandard) %>%
+  pivot_longer(contains("gpkg"), names_to = "pollutant", values_to = "gpkg") %>%
+  mutate(pollutant = str_remove_all(pollutant, "_gpkg")) %>%
+  group_by(label, EuroStandard, pollutant) %>%
+  summarise(bootMeanDF(gpkg))
+  
+ggplot(filter(euro, pollutant == "CO", n > 100), aes(x = EuroStandard, y = mean, fill = label)) + 
+  geom_bar(stat = "identity") + 
+  geom_errorbar(aes(ymin = min, ymax = max), width = .2, position=position_dodge(.9)) +
+  facet_wrap(~label) + 
+  labs(x = "Euro standard", y = quickText(("Fuel-specific CO (g/kg)"))) + 
+  scale_fill_brewer(palette = "Paired") + 
+  theme(legend.position = "none")
 ```
 
-```{r fig.width=5,fig.height=4.5,fig.cap='Density plot of all VSP data, split by site.'}
-ggplot(conox, aes(VSP, fill = Site, colour = Site)) + 
-  geom_density() + 
-  facet_wrap(vars(Site)) +
-  theme(legend.position = "none") +
-  xlim(-10, 30)
+
+
+## Average emissions by model year {.tabset}
+
+### CO
+
+```{r}
+model_year <- conox %>%
+  filter(FuelType %in% c("PETROL", "DIESEL")) %>%
+  drop_na(MODEL_YEAR) %>%
+  select(FuelType, MODEL_YEAR, contains("gpkg")) %>%
+  group_by(MODEL_YEAR, FuelType) %>%
+  summarise(across(contains("gpkg"), mean, na.rm = T),
+            n = n())
+
+ggplot(filter(model_year, MODEL_YEAR >= 2000), 
+              aes(x = MODEL_YEAR, y = CO_gpkg, 
+                  group = FuelType, fill = FuelType, colour = FuelType, size = n)) + 
+  geom_point(alpha = .8) +
+  stat_smooth() +
+  labs(x = "Vehicle model year", 
+       y = quickText("Fuel-specific CO (g/kg)"),
+       color = "Fuel type", fill = "Fuel type")
 ```
 
+
+## Average emissions by manufacturer {.tabset}
+
+### PC gasoline
+
+```{r}
+manu <- conox %>%
+  filter(FuelType == "PETROL", VehicleCategory == "PC") %>%
+  select(VehicleMake, contains("gpkg")) %>%
+  drop_na(VehicleMake) %>% 
+  mutate(Manufacturer = fct_lump_prop(VehicleMake, prop = 0.01)) %>%
+  select(-starts_with("UV")) %>%
+  group_by(Manufacturer) %>%
+  summarise(across(contains("gpkg"), mean, na.rm = T),
+            n = n()) %>%
+  arrange(CO_gpkg) %>%
+  mutate(n = n / sum(n),
+         w = cumsum(n),
+         wm = w - n, 
+         wt = wm + (w - wm)/2) %>%
+  select(-starts_with(c("HC", "NO", "NO2", "NOx", "NH3")))
+
+mycolours <- colorRampPalette(brewer.pal(12, "Paired"))(25)
+
+ggplot(manu, aes(ymin = 0)) + 
+  geom_rect(aes(xmin = wm, xmax = w, ymax = CO_gpkg, fill = Manufacturer), 
+            color = "white") +
+  geom_text(aes(x = wt, y = CO_gpkg, label = Manufacturer), 
+            color = "black", angle = 90, nudge_y = 3) +
+  ggpubr::grids() + 
+  scale_x_continuous(labels = scales::label_percent()) + 
+  scale_y_continuous(expand = expansion(mult = c(0,.10))) + 
+  theme(legend.position = "none") + 
+  labs(x = "Fleet share", y = openair::quickText("Fuel-specific CO (g/kg)")) + 
+  scale_fill_manual(values = mycolours)
+```
+
+
+## Average emissions by engine size
 ## Emission summaries {.tabset}
 
 All data presented as fuel-specific emission factors i.e. g pollutant per kg fuel.
@@ -167,6 +337,7 @@ conox %>%
   ) %>% 
   tab_options(table.align = "left")
 ```
+
 
 ## Detailed pollutant summaries {.tabset}
 
@@ -250,4 +421,77 @@ conox %>%
     )
 ```
 
-### 
+
+# Vehicle dynamics
+
+Speed, acceleration, VSP.
+
+## Measurement conditions {.tabset}
+
+### All data
+
+```{r}
+conox %>% 
+  filter(SAFlag != "X",
+         VSPStatus != "X"
+       ) %>% 
+  summarise(`Speed (kph)` = mean(SpeedKPH, na.rm = TRUE),
+            VSP = mean(VSP, na.rm = TRUE),
+            n = n()) %>% 
+  gt() %>% 
+   fmt_number(
+    columns = everything(),
+    suffixing = TRUE
+  ) %>% 
+  tab_options(table.align = "left")
+```
+
+```{r fig.width=5,fig.height=4.5,fig.cap='Density plot of all VSP data.'}
+ggplot(conox, aes(VSP)) + 
+  geom_density(fill = "dodgerblue") + 
+  xlim(-10, 30)
+```
+
+### By site
+
+```{r}
+conox %>% 
+  filter(SAFlag != "X",
+         VSPStatus != "X"
+       ) %>% 
+  group_by(Site) %>% 
+  summarise(`Speed (kph)` = mean(SpeedKPH, na.rm = TRUE),
+            VSP = mean(VSP, na.rm = TRUE),
+            n = n()) %>% 
+  gt() %>% 
+   fmt_number(
+    columns = 2:4,
+    suffixing = TRUE
+  ) %>% 
+  tab_options(table.align = "left")
+```
+
+```{r fig.width=5,fig.height=4.5,fig.cap='Density plot of all VSP data, split by site.'}
+ggplot(conox, aes(VSP, fill = Site, colour = Site)) + 
+  geom_density() + 
+  facet_wrap(vars(Site)) +
+  theme(legend.position = "none") +
+  xlim(-10, 30)
+```
+
+# Deterioration effects
+
+Average emissions by vehicle age + mileage. 
+
+# Distance specific emissions
+
+See conox_gkm.R
+
+
+
+
+
+
+
+
+
