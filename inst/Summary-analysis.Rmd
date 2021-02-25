@@ -191,7 +191,7 @@ fig <- manu_comp %>%
 
 # Site conditions
 
-Road grade etc. 
+This section could include site variables such as road grade, altitude, lat/long (consistent with the RES best practices document). 
 
 # Environmental conditions
 
@@ -199,13 +199,86 @@ Road grade etc.
 
 ### All data
 
+Pressure and relative humidity data will be included here. 
+
+```{r}
+conox %>% 
+  summarise(`Ambient temperature (deg C)` = mean(AmbientTemperature, na.rm = TRUE),
+            n = n()) %>% 
+  gt() %>% 
+   fmt_number(
+    columns = everything(),
+    suffixing = TRUE
+  ) %>% 
+  tab_options(table.align = "left")
+```
+
+```{r fig.width=5,fig.height=4.5,fig.cap='Density plot of all ambient temperature data.'}
+ggplot(conox, aes(AmbientTemperature)) + 
+  geom_density(fill = "dodgerblue") 
+```
+
 ### By site
 
-## Emissions as a function of ambient temperature
+```{r}
+conox %>% 
+  group_by(Site) %>% 
+  summarise(`Ambient temperature (deg C)` = mean(AmbientTemperature, na.rm = TRUE),
+            n = n()) %>% 
+  gt() %>% 
+   fmt_number(
+    columns = 2:3,
+    suffixing = TRUE
+  ) %>% 
+  tab_options(table.align = "left")
+```
+
+```{r fig.width=5,fig.height=4.5,fig.cap='Density plots of ambient temperature data, split by site.'}
+ggplot(conox, aes(AmbientTemperature, fill = Site, colour = Site)) + 
+  geom_density() + 
+  facet_wrap(vars(Site)) +
+  theme(legend.position = "none")
+```
+
+## Emissions as a function of ambient temperature{.tabset}
+
+Fuel-specific emissions as a function of ambient temperature are shown below for CO, NO~x~ and hydrocarbons. The relationships are categorised according to vehicle and fuel type. 
+
+### CO
+```{r}
+temperature <- conox %>%
+  filter(FuelType != "NO DATA", VehicleCategory != "No data") %>%
+  drop_na(AmbientTemperature) %>%
+  mutate(label = paste0(VehicleCategory, " (", FuelType, ")"),
+         label = fct_lump_prop(label, prop = 0.01)) %>%
+  filter(label %in% c("PC (PETROL)", "PC (DIESEL)")) %>%
+  select(label, contains("gpkg"), AmbientTemperature)
+
+ggplot(temperature, aes(AmbientTemperature, CO_gpkg)) + 
+  stat_smooth(method = "gam", col = "#6A3D9A", formula = y ~ s(x, k = 5)) +
+  facet_wrap(~label) + 
+  labs(x = quickText("Ambient temperature (degreesC)"), y = quickText("Fuel-specific CO (g/kg)")) 
+```
+
+### NO~x~
+```{r}
+ggplot(temperature, aes(AmbientTemperature, NOx_gpkg)) + 
+  stat_smooth(method = "gam", col = "#1F78B4", formula = y ~ s(x, k = 5)) +
+  facet_wrap(~label) + 
+  labs(x = quickText("Ambient temperature (degreesC)"), y = quickText("Fuel-specific NOx (g/kg)")) 
+```
+
+### HC
+```{r}
+ggplot(temperature, aes(AmbientTemperature, HC_gpkg)) + 
+  stat_smooth(method = "gam", col = "#33A02C", formula = y ~ s(x, k = 5)) +
+  facet_wrap(~label) + 
+  labs(x = quickText("Ambient temperature (degreesC)"), y = quickText("Fuel-specific HC (g/kg)")) 
+```
 
 # Vehicle emissions
 
-## Average emissions by Euro standard {.tabset}
+## Emissions by Euro standard {.tabset}
 
 ### CO
 
@@ -224,14 +297,36 @@ ggplot(filter(euro, pollutant == "CO", n > 100), aes(x = EuroStandard, y = mean,
   geom_bar(stat = "identity") + 
   geom_errorbar(aes(ymin = min, ymax = max), width = .2, position=position_dodge(.9)) +
   facet_wrap(~label) + 
-  labs(x = "Euro standard", y = quickText(("Fuel-specific CO (g/kg)"))) + 
+  labs(x = "Euro standard", y = quickText("Fuel-specific CO (g/kg)")) + 
   scale_fill_brewer(palette = "Paired") + 
   theme(legend.position = "none")
 ```
 
+### NO~x~
 
+```{r}
+ggplot(filter(euro, pollutant == "NOx", n > 100), aes(x = EuroStandard, y = mean, fill = label)) + 
+  geom_bar(stat = "identity") + 
+  geom_errorbar(aes(ymin = min, ymax = max), width = .2, position=position_dodge(.9)) +
+  facet_wrap(~label) + 
+  labs(x = "Euro standard", y = quickText("Fuel-specific NOx (g/kg)")) + 
+  scale_fill_brewer(palette = "Paired") + 
+  theme(legend.position = "none")
+```
 
-## Average emissions by model year {.tabset}
+### HC
+
+```{r}
+ggplot(filter(euro, pollutant == "HC", n > 100), aes(x = EuroStandard, y = mean, fill = label)) + 
+  geom_bar(stat = "identity") + 
+  geom_errorbar(aes(ymin = min, ymax = max), width = .2, position=position_dodge(.9)) +
+  facet_wrap(~label) + 
+  labs(x = "Euro standard", y = quickText("Fuel-specific HC (g/kg)")) + 
+  scale_fill_brewer(palette = "Paired") + 
+  theme(legend.position = "none")
+```
+
+## Emissions by model year {.tabset}
 
 ### CO
 
@@ -251,13 +346,46 @@ ggplot(filter(model_year, MODEL_YEAR >= 2000),
   stat_smooth() +
   labs(x = "Vehicle model year", 
        y = quickText("Fuel-specific CO (g/kg)"),
-       color = "Fuel type", fill = "Fuel type")
+       color = "Fuel type", fill = "Fuel type") +
+  scale_color_manual(values = c("#1F78B4", "#33A02C")) + 
+  scale_fill_manual(values = c("#1F78B4", "#33A02C"))
 ```
 
+### NO~x~
 
-## Average emissions by manufacturer {.tabset}
+```{r}
+ggplot(filter(model_year, MODEL_YEAR >= 2000), 
+              aes(x = MODEL_YEAR, y = NOx_gpkg, 
+                  group = FuelType, fill = FuelType, colour = FuelType, size = n)) + 
+  geom_point(alpha = .8) +
+  stat_smooth() +
+  labs(x = "Vehicle model year", 
+       y = quickText("Fuel-specific NOx (g/kg)"),
+       color = "Fuel type", fill = "Fuel type") +
+  scale_color_manual(values = c("#1F78B4", "#33A02C")) + 
+  scale_fill_manual(values = c("#1F78B4", "#33A02C"))
+```
 
-### PC gasoline
+### HC
+
+```{r}
+ggplot(filter(model_year, MODEL_YEAR >= 2000), 
+              aes(x = MODEL_YEAR, y = HC_gpkg, 
+                  group = FuelType, fill = FuelType, colour = FuelType, size = n)) + 
+  geom_point(alpha = .8) +
+  stat_smooth() +
+  labs(x = "Vehicle model year", 
+       y = quickText("Fuel-specific HC (g/kg)"),
+       color = "Fuel type", fill = "Fuel type") +
+  scale_color_manual(values = c("#1F78B4", "#33A02C")) + 
+  scale_fill_manual(values = c("#1F78B4", "#33A02C"))
+```
+
+## Emissions by manufacturer {.tabset}
+
+### PC gasoline {.tabset}
+
+#### CO
 
 ```{r}
 manu <- conox %>%
@@ -268,31 +396,163 @@ manu <- conox %>%
   select(-starts_with("UV")) %>%
   group_by(Manufacturer) %>%
   summarise(across(contains("gpkg"), mean, na.rm = T),
-            n = n()) %>%
+            n = n()) 
+
+manu_co <- manu %>%
   arrange(CO_gpkg) %>%
   mutate(n = n / sum(n),
          w = cumsum(n),
          wm = w - n, 
-         wt = wm + (w - wm)/2) %>%
-  select(-starts_with(c("HC", "NO", "NO2", "NOx", "NH3")))
+         wt = wm + (w - wm)/2) 
 
 mycolours <- colorRampPalette(brewer.pal(12, "Paired"))(25)
 
-ggplot(manu, aes(ymin = 0)) + 
-  geom_rect(aes(xmin = wm, xmax = w, ymax = CO_gpkg, fill = Manufacturer), 
-            color = "white") +
+ggplot(manu_co, aes(ymin = 0)) + 
+  geom_rect(aes(xmin = wm, xmax = w, ymax = CO_gpkg, fill = Manufacturer), color = "white") +
   geom_text(aes(x = wt, y = CO_gpkg, label = Manufacturer), 
             color = "black", angle = 90, nudge_y = 3) +
+  ggpubr::theme_pubr(border = T) +
   ggpubr::grids() + 
   scale_x_continuous(labels = scales::label_percent()) + 
-  scale_y_continuous(expand = expansion(mult = c(0,.10))) + 
+  scale_y_continuous(expand = expansion(mult = c(0,.10)))+ 
+  theme(legend.position = "none") + 
+  labs(x = "Fleet share", y = openair::quickText("Fuel-specific CO (g/kg)")) + 
+  scale_fill_manual(values = mycolours)
+
+```
+
+#### NO~x~
+
+```{r}
+manu_nox <- manu %>%
+  arrange(NOx_gpkg) %>%
+  mutate(n = n / sum(n),
+         w = cumsum(n),
+         wm = w - n, 
+         wt = wm + (w - wm)/2) 
+
+ggplot(manu_nox, aes(ymin = 0)) + 
+  geom_rect(aes(xmin = wm, xmax = w, ymax = NOx_gpkg, fill = Manufacturer), color = "white") +
+  geom_text(aes(x = wt, y = NOx_gpkg, label = Manufacturer), 
+            color = "black", angle = 90, nudge_y = 1) +
+  ggpubr::theme_pubr(border = T) +
+  ggpubr::grids() + 
+  scale_x_continuous(labels = scales::label_percent()) + 
+  scale_y_continuous(expand = expansion(mult = c(0,.10)))+ 
+  theme(legend.position = "none") + 
+  labs(x = "Fleet share", y = openair::quickText("Fuel-specific NOx (g/kg)")) + 
+  scale_fill_manual(values = mycolours)
+
+```
+
+#### HC
+```{r}
+manu_hc <- manu %>%
+  arrange(HC_gpkg) %>%
+  mutate(n = n / sum(n),
+         w = cumsum(n),
+         wm = w - n, 
+         wt = wm + (w - wm)/2) 
+
+ggplot(manu_hc, aes(ymin = 0)) + 
+  geom_rect(aes(xmin = wm, xmax = w, ymax = HC_gpkg, fill = Manufacturer), color = "white") +
+  geom_text(aes(x = wt, y = HC_gpkg, label = Manufacturer), 
+            color = "black", angle = 90, nudge_y = 1) +
+  ggpubr::theme_pubr(border = T) +
+  ggpubr::grids() + 
+  scale_x_continuous(labels = scales::label_percent()) + 
+  scale_y_continuous(expand = expansion(mult = c(0,.10)))+ 
+  theme(legend.position = "none") + 
+  labs(x = "Fleet share", y = openair::quickText("Fuel-specific HC (g/kg)")) + 
+  scale_fill_manual(values = mycolours)
+
+```
+
+### PC diesel {.tabset}
+
+#### CO
+```{r}
+manu <- conox %>%
+  filter((FuelType == "DIESEL")|(FuelType == "DIESEL"), VehicleCategory == "PC") %>%
+  select(VehicleMake, contains("gpkg")) %>%
+  drop_na(VehicleMake) %>% 
+  mutate(Manufacturer = fct_lump_prop(VehicleMake, prop = 0.01)) %>%
+  select(-starts_with("UV")) %>%
+  group_by(Manufacturer) %>%
+  summarise(across(contains("gpkg"), mean, na.rm = T),
+            n = n()) 
+
+manu_co <- manu %>%
+  arrange(CO_gpkg) %>%
+  mutate(n = n / sum(n),
+         w = cumsum(n),
+         wm = w - n, 
+         wt = wm + (w - wm)/2) 
+
+mycolours <- colorRampPalette(brewer.pal(12, "Paired"))(25)
+
+ggplot(manu_co, aes(ymin = 0)) + 
+  geom_rect(aes(xmin = wm, xmax = w, ymax = CO_gpkg, fill = Manufacturer), color = "white") +
+  geom_text(aes(x = wt, y = CO_gpkg, label = Manufacturer), 
+            color = "black", angle = 90, nudge_y = 1) +
+  ggpubr::theme_pubr(border = T) +
+  ggpubr::grids() + 
+  scale_x_continuous(labels = scales::label_percent()) + 
+  scale_y_continuous(expand = expansion(mult = c(0,.10)))+ 
   theme(legend.position = "none") + 
   labs(x = "Fleet share", y = openair::quickText("Fuel-specific CO (g/kg)")) + 
   scale_fill_manual(values = mycolours)
 ```
 
+#### NO~x~
 
-## Average emissions by engine size
+```{r}
+manu_nox <- manu %>%
+  arrange(NOx_gpkg) %>%
+  mutate(n = n / sum(n),
+         w = cumsum(n),
+         wm = w - n, 
+         wt = wm + (w - wm)/2) 
+
+ggplot(manu_nox, aes(ymin = 0)) + 
+  geom_rect(aes(xmin = wm, xmax = w, ymax = NOx_gpkg, fill = Manufacturer), color = "white") +
+  geom_text(aes(x = wt, y = NOx_gpkg, label = Manufacturer), 
+            color = "black", angle = 90, nudge_y = 1) +
+  ggpubr::theme_pubr(border = T) +
+  ggpubr::grids() + 
+  scale_x_continuous(labels = scales::label_percent()) + 
+  scale_y_continuous(expand = expansion(mult = c(0,.10)))+ 
+  theme(legend.position = "none") + 
+  labs(x = "Fleet share", y = openair::quickText("Fuel-specific NOx (g/kg)")) + 
+  scale_fill_manual(values = mycolours)
+
+```
+
+#### HC
+
+```{r}
+manu_hc <- manu %>%
+  arrange(HC_gpkg) %>%
+  mutate(n = n / sum(n),
+         w = cumsum(n),
+         wm = w - n, 
+         wt = wm + (w - wm)/2) 
+
+ggplot(manu_hc, aes(ymin = 0)) + 
+  geom_rect(aes(xmin = wm, xmax = w, ymax = HC_gpkg, fill = Manufacturer), color = "white") +
+  geom_text(aes(x = wt, y = HC_gpkg, label = Manufacturer), 
+            color = "black", angle = 90, nudge_y = 1) +
+  ggpubr::theme_pubr(border = T) +
+  ggpubr::grids() + 
+  scale_x_continuous(labels = scales::label_percent()) + 
+  scale_y_continuous(expand = expansion(mult = c(0,.10)))+ 
+  theme(legend.position = "none") + 
+  labs(x = "Fleet share", y = openair::quickText("Fuel-specific HC (g/kg)")) + 
+  scale_fill_manual(values = mycolours)
+
+```
+
+## Emissions by engine size
 ## Emission summaries {.tabset}
 
 All data presented as fuel-specific emission factors i.e. g pollutant per kg fuel.
@@ -481,7 +741,47 @@ ggplot(conox, aes(VSP, fill = Site, colour = Site)) +
 
 # Deterioration effects
 
-Average emissions by vehicle age + mileage. 
+## Emissions by vehicle age {.tabset}
+
+Examples of the relationship between emissions and vehicle age are shown below for CO, NO~x~ and hydrocarbons. This provides useful insight into the effect of vehicle ageing or deterioration on emissions behaviour. 
+
+### CO
+
+```{r}
+age <- conox %>%
+  filter(FuelType != "NO DATA", VehicleCategory != "No data") %>%
+  mutate(label = paste0(VehicleCategory, " (", FuelType, ")"),
+         label = fct_lump_prop(label, prop = 0.01)) %>%
+  filter(label %in% c("PC (PETROL)", "PC (DIESEL)")) %>%
+  select(label, contains("gpkg"), vehicle_age)
+
+ggplot(filter(age, vehicle_age >= 0 & vehicle_age <= 20), aes(vehicle_age, CO_gpkg)) + 
+  stat_smooth(method = "gam", col = "#6A3D9A", formula = y ~ s(x, k = 5)) +
+  facet_wrap(~label) + 
+  labs(x = "Vehicle age (years)", y = quickText("Fuel-specific CO (g/kg)")) 
+```
+
+### NO~x~
+
+```{r}
+ggplot(filter(age, vehicle_age >= 0 & vehicle_age <= 20), aes(vehicle_age, NOx_gpkg)) + 
+  stat_smooth(method = "gam", col = "#1F78B4", formula = y ~ s(x, k = 5)) +
+  facet_wrap(~label) + 
+  labs(x = "Vehicle age (years)", y = quickText("Fuel-specific NOx (g/kg)")) 
+```
+
+### HC
+
+```{r}
+ggplot(filter(age, vehicle_age >= 0 & vehicle_age <= 20), aes(vehicle_age, HC_gpkg)) + 
+  stat_smooth(method = "gam", col = "#33A02C", formula = y ~ s(x, k = 5)) +
+  facet_wrap(~label) + 
+  labs(x = "Vehicle age (years)", y = quickText("Fuel-specific HC (g/kg)")) 
+```
+
+## Emissions by vehicle mileage {.tabset}
+
+Vehicle mileage data from annual technical inspection tests may be available in some cases. This is considered a good proxy for examining the effect of vehicle deterioration on emissions behaviour since it is a direct measure of the distance a vehicle has driven. 
 
 # Distance specific emissions
 
