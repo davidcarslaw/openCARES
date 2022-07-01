@@ -9,9 +9,6 @@ LDV_g_km(rs_data = conox)
 \arguments{
 \item{rs_data}{A data frame input.}
 }
-\value{
-
-}
 \description{
 Calculate g/km emissions for light duty vehicles
 }

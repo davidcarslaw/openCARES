@@ -26,11 +26,7 @@ library(lubridate)
 theme_set(theme_minimal())
 ```
 
-<center>
-
-![](CARES_logo.jpeg){width="300"}
-
-</center>
+<center>![](CARES_logo.jpeg){width="300"}</center>
 
 # Introduction
 
@@ -52,11 +48,11 @@ The analysis of RES data can be challenging given the complexity and typical siz
 
 The analysis software and the underlying code that produced this document are part of a R package called `openCARES`. The package is available as a GitHub repository and all code is managed under a version control system. The approach means that all changes are recorded and that members of the CARES team can work collaboratively to develop the analysis capabilities over time.
 
-This document is based on data collected using the EDAR as part of the Milan city demonstration campaign. The data set consists of approximately 35,500 measurements. 
+This document is based on data collected using the EDAR as part of the Milan city demonstration campaign. The data set consists of approximately 35,500 measurements.
 
 # Vehicle numbers
 
-This section focuses on the share of measurements per vehicle class, fuel type, Euro standard and so on. 
+This section focuses on the share of measurements per vehicle class, fuel type, Euro standard and so on.
 
 ## Vehicle and fuel type
 
@@ -64,7 +60,7 @@ An example of a way in which to present vehicles samples is shown in Figure \@re
 
 ```{r type-fuel,fig.cap='Numbers of vehicle by main vehicle and fuel type. Click on the key to select specific segments.'}
 
-heat_milan <- read_rds("C:/Users/Naomi/My Drive/CARES/WP3/Milan/Data/it_2021_1_main.rds")
+heat_milan <- milan_rs
 
 out <- heat_milan %>%
   drop_na(veh_class, fuel_type_1) %>%
@@ -100,9 +96,9 @@ ggplot(euro, aes(x = label, y = n, fill = emission_standard)) +
 
 ## Manufacturers {.tabset}
 
-Manufacturer composition for petrol and diesel vehicles. The size of each rectangle is proportional to the share of each manufacturer / manufacturer group. 
+Manufacturer composition for petrol and diesel vehicles. The size of each rectangle is proportional to the share of each manufacturer / manufacturer group.
 
-### Petrol vehicles 
+### Petrol vehicles
 
 ```{r manu_petrol,fig.cap=''}
 
@@ -196,15 +192,15 @@ fig <- manu_comp %>%
 
 # Site conditions
 
-This section could include site variables such as road grade, altitude, lat/long (consistent with the RES best practices document). 
+This section could include site variables such as road grade, altitude, lat/long (consistent with the RES best practices document).
 
 # Environmental conditions
 
-## Meteorological data{.tabset}
+## Meteorological data {.tabset}
 
 ### All data
 
-Pressure and relative humidity data will be included here. 
+Pressure and relative humidity data will be included here.
 
 ```{r}
 heat_milan %>% 
@@ -251,11 +247,12 @@ heat_milan %>%
   theme(legend.position = "none")
 ```
 
-## Emissions as a function of ambient temperature{.tabset}
+## Emissions as a function of ambient temperature {.tabset}
 
-Fuel-specific emissions as a function of ambient temperature are shown below for CO, NO~x~ and hydrocarbons. The relationships are categorised according to vehicle and fuel type. 
+Fuel-specific emissions as a function of ambient temperature are shown below for CO, NO~x~ and hydrocarbons. The relationships are categorised according to vehicle and fuel type.
 
 ### CO
+
 ```{r}
 temperature <- heat_milan %>%
   drop_na(amb_temp, fuel_type_1, veh_class) %>%
@@ -271,6 +268,7 @@ ggplot(temperature, aes(amb_temp, co_fm)) +
 ```
 
 ### NO~x~
+
 ```{r}
 ggplot(temperature, aes(amb_temp, nox_fm)) + 
   stat_smooth(method = "gam", col = "#1F78B4", formula = y ~ s(x, k = 5)) +
@@ -279,6 +277,7 @@ ggplot(temperature, aes(amb_temp, nox_fm)) +
 ```
 
 ### HC
+
 ```{r}
 ggplot(temperature, aes(amb_temp, hc_fm)) + 
   stat_smooth(method = "gam", col = "#33A02C", formula = y ~ s(x, k = 5)) +
@@ -463,6 +462,7 @@ ggplot(manu_nox, aes(ymin = 0)) +
 ```
 
 #### HC
+
 ```{r}
 manu_hc <- manu %>%
   arrange(hc_fm) %>%
@@ -488,6 +488,7 @@ ggplot(manu_hc, aes(ymin = 0)) +
 ### PC diesel {.tabset}
 
 #### CO
+
 ```{r}
 
 manu <- heat_milan %>%
@@ -570,6 +571,7 @@ ggplot(manu_hc, aes(ymin = 0)) +
 ```
 
 ## Emissions by engine size
+
 ## Emission summaries {.tabset}
 
 All data presented as fuel-specific emission factors i.e. g pollutant per kg fuel.
@@ -613,7 +615,6 @@ heat_milan %>%
   ) %>% 
   tab_options(table.align = "left")
 ```
-
 
 ## Detailed pollutant summaries {.tabset}
 
@@ -694,7 +695,6 @@ heat_milan %>%
   )
 ```
 
-
 # Vehicle dynamics
 
 Speed, acceleration, VSP.
@@ -755,8 +755,7 @@ heat_milan %>%
 
 ## Emissions by vehicle mileage {.tabset}
 
-
-Vehicle mileage data from annual technical inspection tests may be available in some cases. This is considered a good proxy for examining the effect of vehicle deterioration on emissions behaviour since it is a direct measure of the distance a vehicle has driven. Examples of the relationship between emissions and vehicle mileage are shown below for CO, NO~x~ and hydrocarbons. This provides useful insight into the effect of vehicle ageing or deterioration on emissions behaviour. 
+Vehicle mileage data from annual technical inspection tests may be available in some cases. This is considered a good proxy for examining the effect of vehicle deterioration on emissions behaviour since it is a direct measure of the distance a vehicle has driven. Examples of the relationship between emissions and vehicle mileage are shown below for CO, NO~x~ and hydrocarbons. This provides useful insight into the effect of vehicle ageing or deterioration on emissions behaviour.
 
 ### CO
 
@@ -795,17 +794,8 @@ ggplot(mileage, aes(mileage, hc_fm)) +
 
 ## Emissions by vehicle age {.tabset}
 
-Useful proxy when vehicle mileage data not available. 
+Useful proxy when vehicle mileage data not available.
 
 # Distance specific emissions
 
 See conox_gkm.R
-
-
-
-
-
-
-
-
-
