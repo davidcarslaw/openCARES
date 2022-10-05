@@ -30,56 +30,342 @@ library(openair)
 library(treemap)
 library(lubridate)
 theme_set(theme_minimal())
+
+load(file = "C:/Users/Naomi/My Drive/openCARES/data/rs_dat.rda")
+
+rs_dat <- rs_dat %>%
+  mutate(
+    fuel_type = case_when(
+      is.na(fuel_type_2) ~ fuel_type_1,
+      TRUE ~ paste0(fuel_type_1, " ", fuel_type_2)
+    ))
 ```
 
 <center>![](CARES_logo.jpeg){width="300"}</center>
 
 # Introduction
 
-## Background
-
-This document provides a detailed summary of remote emission sensing (RES) data as part of the [CARES](https://cares-project.eu) project.
+The goal of the City Air Remote Emission Sensing [CARES](https://cares-project.eu) project is to reduce the hurdles for the practical application of remote emission sensing and to make it a widespread means for the monitoring and enforcement of vehicle emissions, leading to improvements in air pollution. This document forms part of work package 4, which aims to enable cities and other administrations to set up remote emission sensing (RES) measurements more easily and to quicker analyse the data. Here an open-access software package has been developed, containing a suite of user functions that are designed to answer typical questions on the emission performance of the vehicles measured.
 
 ## Aims
 
-The analysis of RES data can be challenging given the complexity and typical size of the data collected during experimental campaigns. Even within the small community of researchers and practitioners that typically conduct experiments, there is a wide variation in the analysis approaches used and their consistency. With that in mind, this document has the following aims:
+The analysis of remote emission sensing (RES) data can be challenging, given the complexity and typical size of the data collected during experimental campaigns. Even within the small community of researchers and practitioners that typically conduct experiments, there is a wide variation in the analysis approaches used and their consistency. With that in mind, this document aims to:
 
-1.  To provide a reliable and automated way of presenting key summary data and plots from RES campaigns.
+1.  Provide a reliable and automated way of presenting key summary data and plots from RES campaigns.
 
-2.  Adopt 'modern' data analysis approaches using [R Statistical Software](https://www.r-project.org) and automated report production using [Rmarkdown](https://rmarkdown.rstudio.com).
+2.  Adopt 'modern' data analysis approaches using [R Statistical Software](https://www.r-project.org) and automated report production using [Quarto](https://quarto.org/).
 
-3.  These approaches offer many advantages over traditional ways of analysing data and presenting it. For example, allowing for detailed data to be presented in a compact way that can easily be filtered by the user, and the use of 'tabs' to better structure the output.
+3.  Present common numerical and graphical outputs that help to interpret data from RES campaigns.
 
-4.  To present common numerical and graphical outputs that help to interpret data from RES campaigns.
+The use of R software and Quarto offers many advantages over traditional ways of analysing and presenting data. For example, allowing for detailed data to be presented in a compact way that can be easily filtered by the users, and the use of 'tabs' to better structure the output.
 
-The analysis software and the underlying code that produced this document are part of a R package called `openCARES`. The package is available as a GitHub repository and all code is managed under a version control system. The approach means that all changes are recorded and that members of the CARES team can work collaboratively to develop the analysis capabilities over time.
+::: callout-tip
+### openCARES
 
-This document is based on data collected using the EDAR as part of the Milan city demonstration campaign. The data set consists of approximately 35,500 measurements.
+The analysis software and the underlying code that produced this document are part of a R package called `openCARES`. The package is available as a GitHub repository and all code is managed under a version control system. The approach means that all changes are recorded and that members of the CARES team can work collaboratively to develop the analysis capabilities over time. Access to the `openCARES` repository can be found [here](https://github.com/naomifarren/openCARES).
+:::
+
+## Data requirements
+
+Example data is used to demonstrate the types of analysis that can be performed using the `openCARES` package. An evaluation of the vehicle fleet composition and site conditions is provided, in addition to fuel-specific emission factors, grouped by vehicle type, fuel type, emission standard, manufacturer and so on. The effect of ambient temperature and vehicle deterioration on emissions is explored and distance-specific factors are calculated. The example data was collected in 2021 during a city demonstration measurement campaign in Milan, Italy, conducted as part of the CARES project. The data set consists of approximately 35,500 measurements collected using an Emissions Detection and Reporting (EDAR) system, developed by Hager Environmental & Atmospheric Technologies (HEAT). Provided that the data requirements outlined below are met, the analysis can be conducted on other data sets collected using a wide range of RES techniques, such as cross-road remote sensing, plume chasing and point sampling.
 
 ::: callout-important
-## Data format
+## Data field specifications
 
-The column headings of your data must be named correctly prior to running the analysis. Please refer to the appendix for more information.
+A description of the individual data fields required for analysis is provided in Tables 1-3. The data must be in the correct format and appropriate units prior to running the analysis. The end user can download and edit their own version of the source code if necessary.
+:::
+
+| Name      | Description                   |
+|-----------|-------------------------------|
+| site_name | Site name                     |
+| latitude  | Decimal degrees e.g. 45.45234 |
+| longitude | Decimal degrees e.g. 9.19894  |
+| altitude  | Elevation (m)                 |
+| slope     | Road grade (unit?)            |
+| amb_temp  | Ambient temperature (°C)      |
+| amb_rhum  | Relative humidity (%)         |
+
+: Table 1. Required site data fields.
+
+| Name         | Description                              |
+|--------------|------------------------------------------|
+| date_time    | ISO 8601 e.g. 2021-09-23T16:11:42.10008Z |
+| co_co2       | mol/mol check these?                                  |
+| no_co2       | mol/mol                                  |
+| no2_co2      | mol/mol                                  |
+| hc_co2       | mol/mol                                  |
+| ch4_co2      | mol/mol                                  |
+| pm_co2       | mol/mol                                  |
+| valid_status | TRUE or FALSE                            |
+| speed        | km h^-1^                                 |
+| vsp_calc     | vehicle specific power (kW t^-1^)        |
+
+: Table 2. Required measurement data fields.
+
+| Name              | Description                                                                  |
+|-------------------|-----------------------------------------------------|
+| fuel_type_1       | Fuel type (fuel type 1 for bi-fuel and hybrid) e.g. diesel, petrol, CNG, LPG |
+| fuel_type_2       | Fuel type 2 for bi-fuel and hybrid e.g. CNG, LPG, electricity                |
+| veh_class         | passenger car, light commercial vehicle, bus, light 2/3/4 wheeler, truck     |
+| emission_standard | Euro 5, Euro 6, Euro 6d-TEMP, Euro 6d                                        |
+| make_domain       | Manufacturer e.g. Fiat, Nissan, VW                                           |
+| reg_date_domestic | Registration date (dd/mm/yyyy)                                               |
+| veh_category      | M1, M1G, N1, L1e                                                             |
+| mileage           | km                                                                           |
+
+: Table 3. Required vehicle data fields.
+
+::: callout-note
+### Hybrid vehicles
+
+Gaseous exhaust pollutants are emitted when hybrid vehicles rely on the internal combustion engine and the derived fuel-specific emission factors (expressed as grams of pollutant per kilogram of fuel) are representative of this. Average emission factors for an entire journey will be lower, depending on the proportion of time the hybrid vehicle operates in battery mode.
+:::
+
+::: callout-note
+### Bi-fuel vehicles
+
+Bi-fuel vehicles, e.g. petrol CNG, petrol LPG, have multi fuel engines that are capable of running on two fuels. The fuels are stored in separate tanks and the engine can run on one fuel at a time. The calculations used to derive fuel-specific emission factors assume that the vehicle is using Compressed Natural Gas (CNG) or Liquid Natural Gas (LPG).
+:::
+
+# Measurement site conditions
+
+This section provides information about the measurement sites used to collect the data, including a summary of the meteorological conditions.
+
+## Site information
+
+```{r}
+
+rs_dat %>%
+  mutate(date_time = substr(date_time, 1, 10),
+         date_time = ymd(date_time)) %>% 
+  group_by(site_name) %>%
+  drop_na(site_name) %>%
+  rename(`Site Name` = site_name) %>%
+  summarise(`Start date` = min(date_time),
+            `End date` = max(date_time),
+            Latitude = mean(latitude, na.rm = TRUE),
+            Longitude = mean(longitude, na.rm = TRUE),
+            `Altitude (m)` = mean(altitude, na.rm = TRUE),
+            `Slope` = mean(slope, na.rm = TRUE)) %>%
+  gt() %>%
+  fmt_number(
+    columns = 4:7,
+    suffixing = TRUE
+  ) %>%
+  tab_options(table.align = "left")
+
+```
+
+## Ambient temperature
+
+::: panel-tabset
+### All data
+
+```{r}
+rs_dat %>% 
+  summarise(amb_temp = mean(amb_temp, na.rm = TRUE),
+            n = n()) %>% 
+  gt() %>% 
+   fmt_number(
+    columns = everything(),
+    suffixing = TRUE
+  ) %>% 
+   cols_label(
+    amb_temp = html("Ambient temperature (&deg;C)")
+  ) %>%
+  tab_options(table.align = "left")
+```
+
+```{r}
+ggplot(rs_dat, aes(amb_temp)) + 
+  geom_density(fill = "#1F78B4", col = "#1F78B4") + 
+  labs(x = quickText("Ambient temperature (°C)"),
+       y = "Density") +
+  theme_bw()
+```
+
+### By site
+
+```{r}
+rs_dat %>% 
+  drop_na(site_name, amb_temp) %>%
+  group_by(site_name) %>% 
+  rename(`Site name` = site_name) %>%
+  summarise(amb_temp = mean(amb_temp, na.rm = TRUE),
+            n = n()) %>% 
+  gt() %>% 
+   fmt_number(
+    columns = 2:3,
+    suffixing = TRUE
+  ) %>% 
+   cols_label(
+     amb_temp = html("Ambient temperature (&deg;C)")
+   ) %>%
+  tab_options(table.align = "left")
+```
+
+```{r}
+rs_dat %>%
+  drop_na(site_name, amb_temp) %>%
+  ggplot(aes(amb_temp, fill = site_name, colour = site_name)) + 
+  geom_density() + 
+  facet_wrap(vars(site_name)) +
+  scale_fill_brewer(palette = "Paired") +
+  scale_colour_brewer(palette = "Paired") + 
+  labs(x = quickText("Ambient temperature (°C)"),
+       y = "Density") +
+  theme_bw() + 
+  theme(legend.position = "none")
+```
+:::
+
+## Relative humidity
+
+::: panel-tabset
+### All data
+
+```{r}
+rs_dat %>% 
+  summarise(`Relative humidity (%)` = mean(amb_rhum, na.rm = TRUE),
+            n = n()) %>% 
+  gt() %>% 
+   fmt_number(
+    columns = everything(),
+    suffixing = TRUE
+  ) %>% 
+  tab_options(table.align = "left")
+```
+
+```{r}
+ggplot(rs_dat, aes(amb_rhum)) + 
+  geom_density(fill = "#1F78B4", col = "#1F78B4") + 
+  labs(x = quickText("Relative humidity (%)"),
+       y = "Density") +
+  theme_bw()
+```
+
+### By site
+
+```{r}
+rs_dat %>% 
+  drop_na(site_name, amb_rhum) %>%
+  group_by(site_name) %>% 
+  rename(`Site name` = site_name) %>%
+  summarise(`Relative humidity (%)` = mean(amb_rhum, na.rm = TRUE),
+            n = n()) %>% 
+  gt() %>% 
+   fmt_number(
+    columns = 2:3,
+    suffixing = TRUE
+  ) %>%
+  tab_options(table.align = "left")
+```
+
+```{r}
+rs_dat %>%
+  drop_na(site_name, amb_rhum) %>%
+  ggplot(aes(amb_rhum, fill = site_name, colour = site_name)) + 
+  geom_density() + 
+  facet_wrap(vars(site_name)) +
+  scale_fill_brewer(palette = "Paired") +
+  scale_colour_brewer(palette = "Paired") + 
+  labs(x = quickText("Relative humidity (%)"),
+       y = "Density") +
+  theme_bw() + 
+  theme(legend.position = "none")
+```
+:::
+
+## Vehicle dynamics
+
+::: panel-tabset
+### All data
+
+```{r}
+rs_dat %>%
+  drop_na(speed, accel, vsp_calc) %>%
+  summarise(speed = mean(speed, na.rm = T),
+            accel = mean(accel, na.rm = T),
+            vsp = mean(vsp_calc, na.rm = T),
+            n = n()) %>%
+  gt() %>%
+  fmt_number(
+    columns = everything(),
+    suffixing = TRUE
+  ) %>% 
+  cols_label(
+    speed = html("Speed (km h<sup>-1</sup>)"),
+    accel = html("Acceleration (unit?)"),
+    vsp = html("Vehicle specific power (kW t<sup>-1</sup>)")
+  ) %>%
+  tab_options(table.align = "left")
+
+```
+
+```{r}
+ggplot(rs_dat, aes(vsp_calc)) + 
+  geom_density(fill = "#1F78B4", col = "#1F78B4") + 
+  labs(x = "Vehicle specific power (kW "~t^-1~")",
+       y = "Density") + 
+  xlim(-10, 30) + 
+  theme_bw()
+
+```
+
+### By site
+
+```{r}
+rs_dat %>%
+  drop_na(speed, accel, vsp_calc) %>%
+  group_by(site_name) %>%
+    summarise(speed = mean(speed, na.rm = T),
+            accel = mean(accel, na.rm = T),
+            vsp = mean(vsp_calc, na.rm = T),
+            n = n()) %>%
+  gt() %>%
+  fmt_number(
+    columns = 2:5,
+    suffixing = TRUE
+  ) %>% 
+  cols_label(
+    site_name = html("Site name"),
+    speed = html("Speed (km h<sup>-1</sup>)"),
+    accel = html("Acceleration (unit?)"),
+    vsp = html("Vehicle specific power (kW t<sup>-1</sup>)")
+  ) %>%
+  tab_options(table.align = "left")
+```
+
+```{r}
+rs_dat %>%
+  drop_na(site_name, vsp_calc) %>%
+  ggplot(aes(vsp_calc, fill = site_name, colour = site_name)) + 
+  geom_density() + 
+  facet_wrap(vars(site_name)) + 
+  scale_fill_brewer(palette = "Paired") +
+  scale_colour_brewer(palette = "Paired") +
+  labs(x = "Vehicle specific power (kW "~t^-1~")",
+       y = "Density") + 
+  theme_bw() + 
+  theme(legend.position = "none") +
+  xlim(-10, 30)
+```
 :::
 
 # Vehicle fleet composition
 
-This section provides an overview of the vehicle fleet composition. The share of measurements per vehicle class, fuel type, Euro class and manufacturer is provided.
-
 ::: callout-note
 ### Note
 
-Measurements are grouped by vehicle class and fuel type throughout this section. Groups comprising less than 1% of the measurements are categorised as 'Other'.
+Measurements are grouped by vehicle class and fuel type. Groups comprising less than 0.5% of the measurements are categorised as 'Other'.
 :::
 
 ## Vehicle and fuel type
 
-The donut charts show the numbers of vehicle, grouped by vehicle type and fuel type.
-
 ::: callout-tip
 ### Tip
 
-Hover over each segment to obtain the number of measured vehicles. Double click on legend to isolate one group. Single click to add and remove different groups.
+Hover over each segment to obtain the number and percentage of measured vehicles. Add or remove groups by clicking on the list in the legend.
 :::
 
 ::: panel-tabset
@@ -87,15 +373,13 @@ Hover over each segment to obtain the number of measured vehicles. Double click 
 
 ```{r}
 
-heat_milan <- milan_rs
-
-donut <- heat_milan %>%
-  drop_na(veh_class, fuel_type_1) %>%
-  mutate(label = paste0(veh_class, " (", fuel_type_1, ")"),
-         label = fct_lump_prop(label, prop = 0.01)) %>%
+vehicle_all <- rs_dat %>%
+  drop_na(veh_class, fuel_type) %>%
+  mutate(label = paste0(veh_class, " (", fuel_type, ")"),
+         label = fct_lump_prop(label, prop = 0.005)) %>%
   count(label)
 
-fig <- donut %>% 
+fig <- vehicle_all %>% 
   plot_ly(labels = ~label, values = ~n) %>% 
   add_pie(hole = 0.6) %>% 
   layout(showlegend = TRUE)
@@ -108,44 +392,41 @@ fig
 
 ```{r}
 
-donut_site <- heat_milan %>%
- drop_na(veh_class, fuel_type_1, site_name) %>%
-  mutate(label = paste0(veh_class, " (", fuel_type_1, ")"),
-         label = fct_lump_prop(label, prop = 0.01)) %>%
+vehicle_site <- rs_dat %>%
+ drop_na(veh_class, fuel_type, site_name) %>%
+  mutate(label = paste0(veh_class, " (", fuel_type, ")"),
+         label = fct_lump_prop(label, prop = 0.005)) %>%
   group_by(site_name) %>%
   count(label)
 
-fig <- donut_site %>%
-  group_by(site_name) %>%
-  do(p=plot_ly(data = ., type = "pie", labels = ~label, values = ~n, hole = 0.6)) %>%
-  subplot()
-
+fig <- ggplot(vehicle_site, aes(x = site_name, y = n, fill = label)) + 
+  geom_bar(position = "fill", stat = "identity") + 
+  labs(x = "", y = "Proportion", fill = "Vehicle class (fuel type)") + 
+  scale_fill_brewer(palette = "Paired") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+  
 fig
-
-# how to plot this bit?
 
 ```
 :::
 
 ## Euro class
 
-The stacked bar charts show the proportion of each Euro class contributing to the main vehicle types.
-
 ::: panel-tabset
 ### All data
 
 ```{r}
 
-euro <- heat_milan %>%
-  drop_na(fuel_type_1, veh_class, emission_standard) %>%
-  mutate(label = paste0(veh_class, " (", fuel_type_1, ")"),
-         label = fct_lump_prop(label, prop = 0.01)) %>%
+euro <- rs_dat %>%
+  drop_na(fuel_type, veh_class, emission_standard) %>%
+  mutate(label = paste0(veh_class, " (", fuel_type, ")"),
+         label = fct_lump_prop(label, prop = 0.005)) %>%
   group_by(label, emission_standard) %>%
   count(emission_standard) 
 
 ggplot(euro, aes(x = label, y = n, fill = emission_standard)) + 
   geom_bar(position="fill", stat="identity") +
-  labs(x = "Vehicle and fuel type", y = "Proportion", fill = "Euro standard") + 
+  labs(x = "", y = "Proportion", fill = "") + 
   scale_fill_brewer(palette = "Paired") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
 ```
@@ -154,16 +435,16 @@ ggplot(euro, aes(x = label, y = n, fill = emission_standard)) +
 
 ```{r}
 
-euro_site <- heat_milan %>%
-  drop_na(fuel_type_1, veh_class, emission_standard, site_name) %>%
-  mutate(label = paste0(veh_class, " (", fuel_type_1, ")"),
-         label = fct_lump_prop(label, prop = 0.01)) %>%
+euro_site <- rs_dat %>%
+  drop_na(fuel_type, veh_class, emission_standard, site_name) %>%
+  mutate(label = paste0(veh_class, " (", fuel_type, ")"),
+         label = fct_lump_prop(label, prop = 0.005)) %>%
   group_by(label, emission_standard, site_name) %>%
   count(emission_standard)
   
 ggplot(euro_site, aes(x = label, y = n, fill = emission_standard)) + 
   geom_bar(position="fill", stat="identity") +
-  labs(x = "Vehicle and fuel type", y = "Proportion", fill = "Euro standard") + 
+  labs(x = "", y = "Proportion", fill = "") + 
   facet_wrap(~site_name) +
   scale_fill_brewer(palette = "Paired") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
@@ -172,14 +453,18 @@ ggplot(euro_site, aes(x = label, y = n, fill = emission_standard)) +
 
 ## Manufacturers
 
-The plots show the manufacturer composition for different fuel types. The size of each rectangle is proportional to the share of each manufacturer / manufacturer group.
+::: callout-note
+### Note
+
+The manufacturers are assigned to groups e.g. "VWG" includes Audi, Bentley, Lamborghini, Porsche, Seat, Skoda and Volkswagen. The size of each rectangle is proportional to the share of each manufacturer / manufacturer group.
+:::
 
 ::: panel-tabset
 ### All fuel types
 
 ```{r}
 
-heat_milan <- heat_milan %>%
+rs_dat <- rs_dat %>%
   mutate(
     mgrp = case_when(
       make_domain %in% c("Aixam") ~ "A6",
@@ -234,14 +519,14 @@ heat_milan <- heat_milan %>%
       make_domain %in% c("Triumph", "TRIUMPH") ~ "TR",
       make_domain %in% c("Volvo") ~ "VLO",
       make_domain %in% c("Vespa") ~ "VP",
-      make_domain %in% c("Audi", "Bentley", "Lamborghini", "Porsche", "Seat", "Skoda", "Volkswagen") ~ "VWG",
+      make_domain %in% c("Audi", "Bentley", "Lamborghini", "Porsche", "Seat", "Skoda", "Volkswagen", "VW") ~ "VWG",
       make_domain %in% c("VAZ") ~ "VZ",
       make_domain %in% c("Yamaha") ~ "YA",
       TRUE ~ NA_character_))
 
-manu_comp <- heat_milan %>%
-  mutate(mgrp = fct_lump_prop(mgrp, prop = 0.01)) %>%
-  group_by(make_domain, mgrp, fuel_type_1) %>%
+manu_comp <- rs_dat %>%
+  mutate(mgrp = fct_lump_prop(mgrp, prop = 0.005)) %>%
+  group_by(make_domain, mgrp, fuel_type) %>%
   count(make_domain) 
 
 fig <- manu_comp %>%
@@ -254,14 +539,14 @@ fig <- manu_comp %>%
 
 ```
 
-### Gasoline
+### Petrol
 
 ```{r}
 
-manu_comp <- heat_milan %>%
-  filter(fuel_type_1 == "petrol") %>%
-  mutate(mgrp = fct_lump_prop(mgrp, prop = 0.01)) %>%
-  group_by(make_domain, mgrp, fuel_type_1) %>%
+manu_comp <- rs_dat %>%
+  filter(fuel_type == "petrol") %>%
+  mutate(mgrp = fct_lump_prop(mgrp, prop = 0.005)) %>%
+  group_by(make_domain, mgrp, fuel_type) %>%
   count(make_domain) 
 
 fig <- manu_comp %>%
@@ -278,10 +563,10 @@ fig <- manu_comp %>%
 
 ```{r}
 
-manu_comp <- heat_milan %>%
-  filter(fuel_type_1 == "diesel") %>%
-  mutate(mgrp = fct_lump_prop(mgrp, prop = 0.01)) %>%
-  group_by(make_domain, mgrp, fuel_type_1) %>%
+manu_comp <- rs_dat %>%
+  filter(fuel_type == "diesel") %>%
+  mutate(mgrp = fct_lump_prop(mgrp, prop = 0.005)) %>%
+  group_by(make_domain, mgrp, fuel_type) %>%
   count(make_domain) 
 
 fig <- manu_comp %>%
@@ -295,224 +580,65 @@ fig <- manu_comp %>%
 ```
 :::
 
-# Site conditions
-
-The table provides information about the location of each measurement site in the dataset. The slope of the road is also included.
-
-```{r}
-
-heat_milan %>% 
-  group_by(site_name) %>%
-  drop_na(site_name) %>%
-  rename(`Site Name` = site_name) %>%
-  summarise(Latitude = mean(latitude, na.rm = TRUE),
-            Longitude = mean(longitude, na.rm = TRUE),
-            `Altitude (m)` = mean(altitude, na.rm = TRUE),
-            `Slope (units?)` = mean(slope, na.rm = TRUE),
-            `No. measurements` = n()) %>%
-  gt() %>%
-  fmt_number(
-    columns = 2:6,
-    suffixing = TRUE
-  ) %>%
-  tab_options(table.align = "left")
-
-```
-
-# Vehicle dynamics
-
-Speed, acceleration, VSP.
-
-## Measurement conditions {.tabset}
-
-### All data
-
-```{r}
-heat_milan %>%
-  drop_na(speed, vsp_calc) %>%
-  summarise(`Speed (kph)` = mean(speed, na.rm = T),
-            VSP = mean(vsp_calc, na.rm = T),
-            n = n()) %>%
-  gt() %>%
-  fmt_number(
-    columns = everything(),
-    suffixing = TRUE
-  ) %>% 
-  tab_options(table.align = "left")
-```
-
-```{r fig.width=5,fig.height=4.5,fig.cap='Density plot of all VSP data.'}
-ggplot(heat_milan, aes(vsp_calc)) + 
-  geom_density(fill = "dodgerblue") + 
-  xlim(-10, 30)
-```
-
-### By site
-
-```{r}
-heat_milan %>%
-  drop_na(speed, vsp_calc) %>%
-  group_by(site_name) %>%
-  summarise(`Speed (kph)` = mean(speed, na.rm = T),
-            VSP = mean(vsp_calc, na.rm = T),
-            n = n()) %>%
-  gt() %>%
-  fmt_number(
-    columns = 2:4,
-    suffixing = TRUE
-  ) %>% 
-  tab_options(table.align = "left")
-```
-
-```{r fig.width=5,fig.height=4.5,fig.cap='Density plot of all VSP data, split by site.'}
-
-heat_milan %>%
-  drop_na(site_name, vsp_calc) %>%
-  ggplot(aes(vsp_calc, fill = site_name, colour = site_name)) + 
-  geom_density() + 
-  facet_wrap(vars(site_name)) + 
-  theme(legend.position = "none") +
-  xlim(-10, 30)
-```
-
-# Meteorological conditions
-
-This section provides a summary of the meteorological conditions during the measurement campaigns. Ambient temperature and relative humidity data are considered.
-
-## Ambient temperature
-
-::: panel-tabset
-### All data
-
-```{r}
-heat_milan %>% 
-  summarise(amb_temp = mean(amb_temp, na.rm = TRUE),
-            n = n()) %>% 
-  gt() %>% 
-   fmt_number(
-    columns = everything(),
-    suffixing = TRUE
-  ) %>% 
-   cols_label(
-    amb_temp = html("Ambient <br>Temperature (&deg;C)")
-  ) %>%
-  tab_options(table.align = "left")
-```
-
-```{r}
-ggplot(heat_milan, aes(amb_temp)) + 
-  geom_density(fill = "dodgerblue") + 
-  labs(x = quickText("Ambient Temperature (°C)")) +
-  theme_bw()
-```
-
-### By site
-
-```{r}
-heat_milan %>% 
-  drop_na(site_name, amb_temp) %>%
-  group_by(site_name) %>% 
-  rename(`Site Name` = site_name) %>%
-  summarise(amb_temp = mean(amb_temp, na.rm = TRUE),
-            n = n()) %>% 
-  gt() %>% 
-   fmt_number(
-    columns = 2:3,
-    suffixing = TRUE
-  ) %>% 
-   cols_label(
-     amb_temp = html("Ambient <br> Temperature (&deg;C)")
-   ) %>%
-  tab_options(table.align = "left")
-```
-
-```{r}
-heat_milan %>%
-  drop_na(site_name, amb_temp) %>%
-  ggplot(aes(amb_temp, fill = site_name, colour = site_name)) + 
-  geom_density() + 
-  facet_wrap(vars(site_name)) +
-  labs(x = quickText("Ambient Temperature (°C)")) +
-  theme_bw() + 
-  theme(legend.position = "none")
-```
-:::
-
-## Relative humidity
-
-::: panel-tabset
-### All data
-
-```{r}
-heat_milan %>% 
-  summarise(`Relative Humidity (%)` = mean(amb_rhum, na.rm = TRUE),
-            n = n()) %>% 
-  gt() %>% 
-   fmt_number(
-    columns = everything(),
-    suffixing = TRUE
-  ) %>% 
-  tab_options(table.align = "left")
-```
-
-```{r}
-ggplot(heat_milan, aes(amb_rhum)) + 
-  geom_density(fill = "dodgerblue") + 
-  labs(x = quickText("Relative Humidity (%)")) +
-  theme_bw()
-```
-
-### By site
-
-```{r}
-heat_milan %>% 
-  drop_na(site_name, amb_rhum) %>%
-  group_by(site_name) %>% 
-  rename(`Site Name` = site_name) %>%
-  summarise(`Relative Humidity (%)` = mean(amb_rhum, na.rm = TRUE),
-            n = n()) %>% 
-  gt() %>% 
-   fmt_number(
-    columns = 2:3,
-    suffixing = TRUE
-  ) %>%
-  tab_options(table.align = "left")
-```
-
-```{r}
-heat_milan %>%
-  drop_na(site_name, amb_rhum) %>%
-  ggplot(aes(amb_rhum, fill = site_name, colour = site_name)) + 
-  geom_density() + 
-  labs(x = quickText("Relative Humidity (%)")) +
-  facet_wrap(vars(site_name)) +
-  theme_bw() + 
-  theme(legend.position = "none")
-```
-:::
-
 # Vehicle emissions
-
-In this section we consider emissions of each measured pollutant, as a function of Euro class, vehicle registration year, manufacturer and engine size.
-
-Description
 
 ## Emissions by Euro class
 
 ::: callout-note
 ### Note
 
-The number of measurements for a particular vehicle type and Euro class must be greater than 100 for an average emission value to be shown.
+Emission values are shown when the number of measurements for a particular vehicle type and Euro class is greater than 100.
 :::
 
 ::: panel-tabset
 ### CO
 
 ```{r}
-euro <- heat_milan %>%
-  drop_na(fuel_type_1, veh_class, emission_standard) %>%
-  mutate(label = paste0(veh_class, " (", fuel_type_1, ")"),
-         label = fct_lump_prop(label, prop = 0.01)) %>%
+
+# code to be used to calculate g/kg directly from ratios. 
+# not matching g/kg columns - check
+
+# rs_dat %>% 
+#   mutate(
+#     co_gpkg = case_when(
+#       fuel_type %in% c("diesel", "petrol", "diesel electricity", "petrol electricity") ~ ((28*co_co2*860)/(1+co_co2+(2*3*hc_co2))*12),
+#       fuel_type %in% c("CNG", "petrol CNG", "diesel CNG") ~ ((28*co_co2*750)/(1+co_co2+(3.3*1*hc_co2))*12),
+#       fuel_type %in% c("LPG", "diesel LPG", "petrol LPG") ~ ((28*co_co2*820)/(1+co_co2+(1*3*hc_co2))*12),
+#       TRUE ~ NA_real_
+#     ),
+#     no_gpkg = case_when(
+#       fuel_type %in% c("diesel", "petrol", "diesel electricity", "petrol electricity") ~ ((30*no_co2*860)/(1+co_co2+(2*3*hc_co2))*12),
+#       fuel_type %in% c("CNG", "petrol CNG", "diesel CNG") ~ ((30*no_co2*750)/(1+co_co2+(3.3*1*hc_co2))*12),
+#       fuel_type %in% c("LPG", "diesel LPG", "petrol LPG") ~ ((30*no_co2*820)/(1+co_co2+(1*3*hc_co2))*12),
+#       TRUE ~ NA_real_
+#     ),
+#     no2_gpkg = case_when(
+#       fuel_type %in% c("diesel", "petrol", "diesel electricity", "petrol electricity") ~ ((46*no2_co2*860)/(1+co_co2+(2*3*hc_co2))*12),
+#       fuel_type %in% c("CNG", "petrol CNG", "diesel CNG") ~ ((46*no2_co2*750)/(1+co_co2+(3.3*1*hc_co2))*12),
+#       fuel_type %in% c("LPG", "diesel LPG", "petrol LPG") ~ ((46*no2_co2*820)/(1+co_co2+(1*3*hc_co2))*12),
+#       TRUE ~ NA_real_
+#     ),
+#     nox_gpkg = (no_gpkg*(46/30) + no2_gpkg),
+#     hc_gpkg = case_when(
+#       fuel_type %in% c("diesel", "petrol", "diesel electricity", "petrol electricity") ~ ((2*44*hc_co2*860)/(1+co_co2+(2*3*hc_co2))*12),
+#       fuel_type %in% c("CNG", "petrol CNG", "diesel CNG") ~ ((3.33*16*hc_co2*750)/(1+co_co2+(3.3*1*hc_co2))*12),
+#       fuel_type %in% c("LPG", "diesel LPG", "petrol LPG") ~ ((1*44*hc_co2*820)/(1+co_co2+(1*3*hc_co2))*12),
+#       TRUE ~ NA_real_
+#     ),
+#     ch4_gpkg = case_when(
+#       fuel_type %in% c("diesel", "petrol", "diesel electricity", "petrol electricity") ~ ((14*ch4_co2*860)/(1+co_co2+(2*3*hc_co2))*12),
+#       fuel_type %in% c("CNG", "petrol CNG", "diesel CNG") ~ ((14*ch4_co2*750)/(1+co_co2+(3.3*1*hc_co2))*12),
+#       fuel_type %in% c("LPG", "diesel LPG", "petrol LPG") ~ ((14*ch4_co2*820)/(1+co_co2+(1*3*hc_co2))*12),
+#       TRUE ~ NA_real_
+#     ))
+```
+
+```{r}
+euro <- rs_dat %>%
+  drop_na(fuel_type, veh_class, emission_standard) %>%
+  filter(valid_status == "TRUE") %>%
+  mutate(label = paste0(veh_class, " (", fuel_type, ")"),
+         label = fct_lump_prop(label, prop = 0.005)) %>%
   select(label, contains("fm"), emission_standard) %>%
   pivot_longer(contains("fm"), names_to = "pollutant", values_to = "fm") %>%
   mutate(pollutant = str_remove_all(pollutant, "_fm"),
@@ -535,6 +661,13 @@ ggplot(filter(euro, pollutant == "co", n > 100, label != "Other"),
 ```
 
 ### NO~x~
+
+::: callout-tip
+#### Tip
+
+NO~x~ represents the sum of NO and NO~2~. To generate NO~x~ emission factors, NO emission factors are multiplied by 46/30 to generate 'NO as NO~2~ equivalent` emission factors, which are then added to the NO~2~ emission factors.  
+
+:::
 
 ::: panel-tabset
 #### NO
@@ -597,18 +730,6 @@ ggplot(filter(euro, pollutant == "hc", n > 100), aes(x = emission_standard, y = 
   scale_fill_brewer(palette = "Paired") + 
   theme(legend.position = "none")
 ```
-
-### PM
-
-```{r}
-ggplot(filter(euro, pollutant == "pm", n > 100), aes(x = emission_standard, y = mean, fill = label)) + 
-  geom_bar(stat = "identity") + 
-  geom_errorbar(aes(ymin = min, ymax = max), width = .2, position=position_dodge(.9)) +
-  facet_wrap(~label) + 
-  labs(x = "Euro class", y = quickText("Fuel-specific PM (g/kg)")) + 
-  scale_fill_brewer(palette = "Paired") + 
-  theme(legend.position = "none")
-```
 :::
 
 ## Emissions by vehicle registration year
@@ -616,57 +737,41 @@ ggplot(filter(euro, pollutant == "pm", n > 100), aes(x = emission_standard, y = 
 ::: callout-note
 ### Note
 
-Measurements are grouped by vehicle class and fuel type. Groups comprising less than 5% of the measurements are excluded.
+Measurements are grouped by vehicle class and fuel type. Groups comprising less than 5% of the measurements are excluded. Emission values are shown when the number of measurements for a particular vehicle registration year within a group is greater than 100. 
+
 :::
 
 ::: panel-tabset
 ### CO
 
 ```{r}
-reg_year <- heat_milan %>%
-  drop_na(fuel_type_1, veh_class, reg_date_domestic) %>%
-  mutate(label = paste0(veh_class, " (", fuel_type_1, ")"),
+reg_year <- rs_dat %>%
+  drop_na(fuel_type, veh_class, reg_date_domestic) %>%
+  filter(valid_status == "TRUE") %>%
+  mutate(label = paste0(veh_class, " (", fuel_type, ")"),
          label = fct_lump_prop(label, prop = 0.05)) %>%
-  select(label, contains("fm"), reg_date_domestic, veh_class, fuel_type_1) %>%
+  select(label, contains("fm"), reg_date_domestic, veh_class, fuel_type) %>%
   pivot_longer(contains("fm"), names_to = "pollutant", values_to = "fm") %>%
-  mutate(pollutant = str_remove_all(pollutant, "_fm"),
+  mutate(reg_date_domestic = dmy(reg_date_domestic),
+         pollutant = str_remove_all(pollutant, "_fm"),
          reg_year = lubridate::year(reg_date_domestic)) %>%
-  group_by(label, reg_year, pollutant, veh_class, fuel_type_1) %>%
+  group_by(label, reg_year, pollutant, veh_class, fuel_type) %>%
   summarise(bootMeanDF(fm))
 
-# reg_year <- heat_milan %>%
-#   filter(fuel_type_1 %in% c("petrol", "diesel")) %>%
-#   select(fuel_type_1, reg_date_domestic, contains("fm")) %>%
-#   drop_na(contains("fm")) %>%
-#   mutate(reg_year = lubridate::year(reg_date_domestic)) %>%
-#   group_by(reg_year, fuel_type_1) %>%
-#   summarise(across(contains("fm"), mean, na.rm = T),
-#             n = n())
-
-ggplot(filter(reg_year, pollutant == "co", reg_year >= 2000, label != "Other"), 
-       aes(x = reg_year, y = mean, fill = fuel_type_1, colour = fuel_type_1, size = n)) + 
+ggplot(filter(reg_year, pollutant == "co", n > 100, reg_year >= 2000, label != "Other"), 
+       aes(x = reg_year, y = mean, fill = veh_class, colour = veh_class, size = n)) + 
   geom_point(alpha = .8) + 
   stat_smooth() +
-  facet_wrap(~veh_class) + 
+  facet_wrap(~fuel_type) + 
   labs(x = "Vehicle registration year", 
        y = quickText("Fuel-specific CO (g/kg)"),
-       color = "Fuel type",
-       fill = "Fuel type") + 
+       color = "Vehicle class",
+       fill = "Vehicle class") + 
   guides(size = "none") +
   scale_fill_brewer(palette = "Paired") + 
   scale_colour_brewer(palette = "Paired") + 
   theme_bw() 
-  
-# ggplot(filter(reg_year, reg_year >= 2000), 
-#               aes(x = reg_year, y = co_fm, 
-#                   group = fuel_type_1, fill = fuel_type_1, colour = fuel_type_1, size = n)) + 
-#   geom_point(alpha = .8) +
-#   stat_smooth() +
-#   labs(x = "Vehicle registration year", 
-#        y = quickText("Fuel-specific CO (g/kg)"),
-#        color = "Fuel type", fill = "Fuel type") +
-#   scale_color_manual(values = c("#1F78B4", "#33A02C")) + 
-#   scale_fill_manual(values = c("#1F78B4", "#33A02C"))
+
 ```
 
 ### NO~x~
@@ -676,15 +781,15 @@ ggplot(filter(reg_year, pollutant == "co", reg_year >= 2000, label != "Other"),
 
 ```{r}
 
-ggplot(filter(reg_year, pollutant == "no", reg_year >= 2000, label != "Other"), 
-       aes(x = reg_year, y = mean, fill = fuel_type_1, colour = fuel_type_1, size = n)) + 
+ggplot(filter(reg_year, pollutant == "no", n > 100, reg_year >= 2000, label != "Other"), 
+       aes(x = reg_year, y = mean, fill = veh_class, colour = veh_class, size = n)) + 
   geom_point(alpha = .8) + 
   stat_smooth() +
-  facet_wrap(~veh_class) + 
+  facet_wrap(~fuel_type) + 
   labs(x = "Vehicle registration year", 
        y = quickText("Fuel-specific NO (g/kg)"),
-       color = "Fuel type",
-       fill = "Fuel type") + 
+       color = "Vehicle class",
+       fill = "Vehicle class") + 
   guides(size = "none") +
   scale_fill_brewer(palette = "Paired") + 
   scale_colour_brewer(palette = "Paired") + 
@@ -696,15 +801,15 @@ ggplot(filter(reg_year, pollutant == "no", reg_year >= 2000, label != "Other"),
 
 ```{r}
 
-ggplot(filter(reg_year, pollutant == "no2", reg_year >= 2000, label != "Other"), 
-       aes(x = reg_year, y = mean, fill = fuel_type_1, colour = fuel_type_1, size = n)) + 
+ggplot(filter(reg_year, pollutant == "no2", n > 100, reg_year >= 2000, label != "Other"), 
+       aes(x = reg_year, y = mean, fill = veh_class, colour = veh_class, size = n)) + 
   geom_point(alpha = .8) + 
   stat_smooth() +
-  facet_wrap(~veh_class) + 
+  facet_wrap(~fuel_type) + 
   labs(x = "Vehicle registration year", 
        y = quickText("Fuel-specific NO2 (g/kg)"),
-       color = "Fuel type",
-       fill = "Fuel type") + 
+       color = "Vehicle class",
+       fill = "Vehicle class") + 
   guides(size = "none") +
   scale_fill_brewer(palette = "Paired") + 
   scale_colour_brewer(palette = "Paired") + 
@@ -716,20 +821,19 @@ ggplot(filter(reg_year, pollutant == "no2", reg_year >= 2000, label != "Other"),
 
 ```{r}
 
-ggplot(filter(reg_year, pollutant == "nox", reg_year >= 2000, label != "Other"), 
-       aes(x = reg_year, y = mean, fill = fuel_type_1, colour = fuel_type_1, size = n)) + 
+ggplot(filter(reg_year, pollutant == "nox", n > 100, reg_year >= 2000, label != "Other"), 
+       aes(x = reg_year, y = mean, fill = veh_class, colour = veh_class, size = n)) + 
   geom_point(alpha = .8) + 
   stat_smooth() +
-  facet_wrap(~veh_class) + 
+  facet_wrap(~fuel_type) + 
   labs(x = "Vehicle registration year", 
        y = quickText("Fuel-specific NOx (g/kg)"),
-       color = "Fuel type",
-       fill = "Fuel type") + 
+       color = "Vehicle class",
+       fill = "Vehicle class") + 
   guides(size = "none") +
   scale_fill_brewer(palette = "Paired") + 
   scale_colour_brewer(palette = "Paired") + 
   theme_bw() 
-
 ```
 :::
 
@@ -737,15 +841,15 @@ ggplot(filter(reg_year, pollutant == "nox", reg_year >= 2000, label != "Other"),
 
 ```{r}
 
-ggplot(filter(reg_year, pollutant == "ch4", reg_year >= 2000, label != "Other"), 
-       aes(x = reg_year, y = mean, fill = fuel_type_1, colour = fuel_type_1, size = n)) + 
+ggplot(filter(reg_year, pollutant == "ch4", n > 100, reg_year >= 2000, label != "Other"), 
+       aes(x = reg_year, y = mean, fill = veh_class, colour = veh_class, size = n)) + 
   geom_point(alpha = .8) + 
   stat_smooth() +
-  facet_wrap(~veh_class) + 
+  facet_wrap(~fuel_type) + 
   labs(x = "Vehicle registration year", 
        y = quickText("Fuel-specific CH4 (g/kg)"),
-       color = "Fuel type",
-       fill = "Fuel type") + 
+       color = "Vehicle class",
+       fill = "Vehicle class") + 
   guides(size = "none") +
   scale_fill_brewer(palette = "Paired") + 
   scale_colour_brewer(palette = "Paired") + 
@@ -757,15 +861,15 @@ ggplot(filter(reg_year, pollutant == "ch4", reg_year >= 2000, label != "Other"),
 
 ```{r}
 
-ggplot(filter(reg_year, pollutant == "hc", reg_year >= 2000, label != "Other"), 
-       aes(x = reg_year, y = mean, fill = fuel_type_1, colour = fuel_type_1, size = n)) + 
+ggplot(filter(reg_year, pollutant == "hc", n > 100, reg_year >= 2000, label != "Other"), 
+       aes(x = reg_year, y = mean, fill = veh_class, colour = veh_class, size = n)) + 
   geom_point(alpha = .8) + 
   stat_smooth() +
-  facet_wrap(~veh_class) + 
+  facet_wrap(~fuel_type) + 
   labs(x = "Vehicle registration year", 
        y = quickText("Fuel-specific HC (g/kg)"),
-       color = "Fuel type",
-       fill = "Fuel type") + 
+       color = "Vehicle class",
+       fill = "Vehicle class") + 
   guides(size = "none") +
   scale_fill_brewer(palette = "Paired") + 
   scale_colour_brewer(palette = "Paired") + 
@@ -773,45 +877,27 @@ ggplot(filter(reg_year, pollutant == "hc", reg_year >= 2000, label != "Other"),
 
 ```
 
-### PM
-
-```{r}
-
-ggplot(filter(reg_year, pollutant == "pm", reg_year >= 2000, label != "Other"), 
-       aes(x = reg_year, y = mean, fill = fuel_type_1, colour = fuel_type_1, size = n)) + 
-  geom_point(alpha = .8) + 
-  stat_smooth() +
-  facet_wrap(~veh_class) + 
-  labs(x = "Vehicle registration year", 
-       y = quickText("Fuel-specific PM (g/kg)"),
-       color = "Fuel type",
-       fill = "Fuel type") + 
-  guides(size = "none") +
-  scale_fill_brewer(palette = "Paired") + 
-  scale_colour_brewer(palette = "Paired") + 
-  theme_bw() 
-
-```
 :::
 
 ## Emissions by manufacturer
 
 ::: panel-tabset
-### Passenger car (gasoline)
+### Passenger car (petrol)
 
 ::: panel-tabset
 #### CO
 
 ```{r}
 
-manu <- heat_milan %>%
-  filter(fuel_type_1 == "petrol", veh_class == "passenger car") %>%
+manu <- rs_dat %>%
+  filter(fuel_type == "petrol", veh_class == "passenger car", valid_status == "TRUE") %>%
+  rename() %>%
   select(make_domain, contains("fm")) %>%
   drop_na(make_domain) %>%
   mutate(manu = fct_lump_prop(make_domain, prop = 0.01)) %>%
   group_by(manu) %>%
   summarise(across(contains("fm"), mean, na.rm = T),
-            n = n())
+            n = n()) 
 
 manu_co <- manu %>%
   arrange(co_fm) %>%
@@ -824,8 +910,6 @@ mycolours <- colorRampPalette(brewer.pal(12, "Paired"))(25)
 
 ggplot(manu_co, aes(ymin = 0)) + 
   geom_rect(aes(xmin = wm, xmax = w, ymax = co_fm, fill = manu), color = "white") +
-  #geom_text(aes(x = wt, y = co_fm, label = manu), 
-           # color = "black", angle = 90) +
   ggpubr::theme_pubr(border = T, legend = "right") +
   ggpubr::grids() + 
   scale_x_continuous(labels = scales::label_percent()) + 
@@ -951,29 +1035,6 @@ ggplot(manu_hc, aes(ymin = 0)) +
   scale_y_continuous(expand = expansion(mult = c(0,.10))) + 
   labs(x = "Fleet share", 
        y = openair::quickText("Fuel-specific HC (g/kg)"),
-       fill = "Manufacturer") + 
-  scale_fill_manual(values = mycolours)
-
-```
-
-#### PM
-
-```{r}
-manu_pm <- manu %>%
-  arrange(pm_fm) %>%
-  mutate(n = n / sum(n),
-         w = cumsum(n),
-         wm = w - n, 
-         wt = wm + (w - wm)/2) 
-
-ggplot(manu_pm, aes(ymin = 0)) + 
-  geom_rect(aes(xmin = wm, xmax = w, ymax = pm_fm, fill = manu), color = "white") +
-  ggpubr::theme_pubr(border = T, legend = "right") +
-  ggpubr::grids() + 
-  scale_x_continuous(labels = scales::label_percent()) + 
-  scale_y_continuous(expand = expansion(mult = c(0,.10))) + 
-  labs(x = "Fleet share", 
-       y = openair::quickText("Fuel-specific PM (g/kg)"),
        fill = "Manufacturer") + 
   scale_fill_manual(values = mycolours)
 
@@ -987,8 +1048,8 @@ ggplot(manu_pm, aes(ymin = 0)) +
 
 ```{r}
 
-manu <- heat_milan %>%
-  filter(fuel_type_1 == "diesel", veh_class == "passenger car") %>%
+manu <- rs_dat %>%
+  filter(fuel_type == "diesel", veh_class == "passenger car", valid_status == "TRUE") %>%
   select(make_domain, contains("fm")) %>%
   drop_na(make_domain) %>%
   mutate(manu = fct_lump_prop(make_domain, prop = 0.01)) %>%
@@ -1135,35 +1196,16 @@ ggplot(manu_hc, aes(ymin = 0)) +
   scale_fill_manual(values = mycolours)
 
 ```
-
-#### PM
-
-```{r}
-manu_pm <- manu %>%
-  arrange(pm_fm) %>%
-  mutate(n = n / sum(n),
-         w = cumsum(n),
-         wm = w - n, 
-         wt = wm + (w - wm)/2) 
-
-ggplot(manu_pm, aes(ymin = 0)) + 
-  geom_rect(aes(xmin = wm, xmax = w, ymax = pm_fm, fill = manu), color = "white") +
-  ggpubr::theme_pubr(border = T, legend = "right") +
-  ggpubr::grids() + 
-  scale_x_continuous(labels = scales::label_percent()) + 
-  scale_y_continuous(expand = expansion(mult = c(0,.10))) + 
-  labs(x = "Fleet share", 
-       y = openair::quickText("Fuel-specific PM (g/kg)"),
-       fill = "Manufacturer") + 
-  scale_fill_manual(values = mycolours)
-
-```
 :::
 :::
 
 ## Emission summaries
 
-All data presented as fuel-specific emission factors i.e. g pollutant per kg fuel.
+::: callout-tip
+### Tip
+
+The pollutant emission factors provided in the emission summary tables and detailed pollutant summary tables are expressed as grams of pollutant per kilogram of fuel. 'n' shows the number of measurements in each group. 
+:::
 
 ::: panel-tabset
 ### Overview
@@ -1172,7 +1214,8 @@ All data presented as fuel-specific emission factors i.e. g pollutant per kg fue
 #### All data
 
 ```{r}
-heat_milan %>%
+rs_dat %>%
+  filter(valid_status == "TRUE") %>%
   summarise(
     CO = mean(co_fm, na.rm = T),
     NO = mean(no_fm, na.rm = T),
@@ -1180,22 +1223,22 @@ heat_milan %>%
     NOx = mean(nox_fm, na.rm = T),
     CH4 = mean(ch4_fm, na.rm = T),
     HC = mean(hc_fm, na.rm = T),
-    PM = mean(pm_fm, na.rm = T),
     n = n()
   ) %>%
   gt() %>%
-   fmt_number(
+  fmt_number(
     columns = everything(),
     suffixing = TRUE
-  ) %>%
-  tab_options(table.align = "left")
-
+    ) %>%
+   tab_options(table.align = "left")
+   
 ```
 
 #### By site
 
 ```{r}
-heat_milan %>%
+rs_dat %>%
+  filter(valid_status == "TRUE") %>%
   group_by(site_name) %>%
   drop_na(site_name) %>%
   summarise(
@@ -1205,12 +1248,11 @@ heat_milan %>%
     NOx = mean(nox_fm, na.rm = T),
     CH4 = mean(ch4_fm, na.rm = T),
     HC = mean(hc_fm, na.rm = T),
-    PM = mean(pm_fm, na.rm = T),
     n = n()
   ) %>%
   gt() %>%
    fmt_number(
-    columns = 2:9,
+    columns = 2:8,
     suffixing = TRUE
   ) %>%
   tab_options(table.align = "left") %>%
@@ -1225,9 +1267,10 @@ heat_milan %>%
 #### All data
 
 ```{r}
-heat_milan %>% 
-  group_by(fuel_type_1) %>% 
-  drop_na(fuel_type_1) %>%
+rs_dat %>% 
+  filter(valid_status == "TRUE") %>%
+  group_by(fuel_type) %>% 
+  drop_na(fuel_type) %>%
   summarise(
     CO = mean(co_fm, na.rm = T),
     NO = mean(no_fm, na.rm = T),
@@ -1235,24 +1278,24 @@ heat_milan %>%
     NOx = mean(nox_fm, na.rm = T),
     CH4 = mean(ch4_fm, na.rm = T),
     HC = mean(hc_fm, na.rm = T),
-    PM = mean(pm_fm, na.rm = T),
     n = n()
     ) %>% 
   gt() %>% 
    fmt_number(
-    columns = 2:9,
+    columns = 2:8,
     suffixing = TRUE
   ) %>% 
   tab_options(table.align = "left") %>%
-  cols_label(fuel_type_1 = "Fuel Type")
+  cols_label(fuel_type = "Fuel Type")
 ```
 
 #### By site
 
 ```{r}
-heat_milan %>% 
-  group_by(site_name, fuel_type_1) %>% 
-  drop_na(site_name, fuel_type_1) %>%
+rs_dat %>% 
+  filter(valid_status == "TRUE") %>%
+  group_by(site_name, fuel_type) %>% 
+  drop_na(site_name, fuel_type) %>%
   summarise(
     CO = mean(co_fm, na.rm = T),
     NO = mean(no_fm, na.rm = T),
@@ -1260,16 +1303,15 @@ heat_milan %>%
     NOx = mean(nox_fm, na.rm = T),
     CH4 = mean(ch4_fm, na.rm = T),
     HC = mean(hc_fm, na.rm = T),
-    PM = mean(pm_fm, na.rm = T),
     n = n()
     ) %>% 
   gt() %>% 
    fmt_number(
-    columns = 3:10,
+    columns = 3:9,
     suffixing = TRUE
   ) %>% 
   tab_options(table.align = "left") %>%
-  cols_label(fuel_type_1 = "Fuel Type",
+  cols_label(fuel_type = "Fuel Type",
              site_name = "Site Name")
 ```
 :::
@@ -1285,11 +1327,12 @@ The table below shows the mean and 95% confidence interval in the mean is given.
 ### CO
 
 ```{r}
-heat_milan %>%
-  drop_na(fuel_type_1, veh_category, emission_standard) %>%
-  group_by(veh_category, fuel_type_1, emission_standard) %>%
+rs_dat %>%
+  drop_na(fuel_type, veh_category, emission_standard) %>%
+  filter(valid_status == "TRUE") %>%
+  group_by(veh_category, fuel_type, emission_standard) %>%
   rename(`Vehicle category` = veh_category,
-         `Fuel type` = fuel_type_1,
+         `Fuel type` = fuel_type,
          `Euro class` = emission_standard) %>%
   summarise(bootMeanDF(co_fm)) %>%
   mutate(mean = round(mean, 2),
@@ -1308,11 +1351,12 @@ heat_milan %>%
 #### NO
 
 ```{r}
-heat_milan %>%
-  drop_na(fuel_type_1, veh_category, emission_standard) %>%
-  group_by(veh_category, fuel_type_1, emission_standard) %>%
+rs_dat %>%
+  drop_na(fuel_type, veh_category, emission_standard) %>%
+  filter(valid_status == "TRUE") %>%
+  group_by(veh_category, fuel_type, emission_standard) %>%
   rename(`Vehicle category` = veh_category,
-         `Fuel type` = fuel_type_1,
+         `Fuel type` = fuel_type,
          `Euro class` = emission_standard) %>%
   summarise(bootMeanDF(no_fm)) %>%
   mutate(mean = round(mean, 2),
@@ -1328,11 +1372,12 @@ heat_milan %>%
 #### NO~2~
 
 ```{r}
-heat_milan %>%
-  drop_na(fuel_type_1, veh_category, emission_standard) %>%
-  group_by(veh_category, fuel_type_1, emission_standard) %>%
+rs_dat %>%
+  drop_na(fuel_type, veh_category, emission_standard) %>%
+  filter(valid_status == "TRUE") %>%
+  group_by(veh_category, fuel_type, emission_standard) %>%
   rename(`Vehicle category` = veh_category,
-         `Fuel type` = fuel_type_1,
+         `Fuel type` = fuel_type,
          `Euro class` = emission_standard) %>%
   summarise(bootMeanDF(no2_fm)) %>%
   mutate(mean = round(mean, 2),
@@ -1348,11 +1393,12 @@ heat_milan %>%
 #### NO~x~
 
 ```{r}
-heat_milan %>%
-  drop_na(fuel_type_1, veh_category, emission_standard) %>%
-  group_by(veh_category, fuel_type_1, emission_standard) %>%
+rs_dat %>%
+  drop_na(fuel_type, veh_category, emission_standard) %>%
+  filter(valid_status == "TRUE") %>%
+  group_by(veh_category, fuel_type, emission_standard) %>%
   rename(`Vehicle category` = veh_category,
-         `Fuel type` = fuel_type_1,
+         `Fuel type` = fuel_type,
          `Euro class` = emission_standard) %>%
   summarise(bootMeanDF(nox_fm)) %>%
   mutate(mean = round(mean, 2),
@@ -1369,11 +1415,12 @@ heat_milan %>%
 ### CH~4~
 
 ```{r}
-heat_milan %>%
-  drop_na(fuel_type_1, veh_category, emission_standard) %>%
-  group_by(veh_category, fuel_type_1, emission_standard) %>%
+rs_dat %>%
+  drop_na(fuel_type, veh_category, emission_standard) %>%
+  filter(valid_status == "TRUE") %>%
+  group_by(veh_category, fuel_type, emission_standard) %>%
   rename(`Vehicle category` = veh_category,
-         `Fuel type` = fuel_type_1,
+         `Fuel type` = fuel_type,
          `Euro class` = emission_standard) %>%
   summarise(bootMeanDF(ch4_fm)) %>%
   mutate(mean = round(mean, 2),
@@ -1389,33 +1436,14 @@ heat_milan %>%
 ### HC
 
 ```{r}
-heat_milan %>%
-  drop_na(fuel_type_1, veh_category, emission_standard) %>%
-  group_by(veh_category, fuel_type_1, emission_standard) %>%
+rs_dat %>%
+  drop_na(fuel_type, veh_category, emission_standard) %>%
+  filter(valid_status == "TRUE") %>%
+  group_by(veh_category, fuel_type, emission_standard) %>%
   rename(`Vehicle category` = veh_category,
-         `Fuel type` = fuel_type_1,
+         `Fuel type` = fuel_type,
          `Euro class` = emission_standard) %>%
   summarise(bootMeanDF(hc_fm)) %>%
-  mutate(mean = round(mean, 2),
-         min = round(min, 2),
-         max = round(max, 2)) %>%
-  datatable(filter = "top",
-            extensions = 'Buttons', options = list(
-    dom = 'Bfrtip',
-    buttons = c('copy', 'csv', 'excel', 'pdf', 'print'))
-  )
-```
-
-### PM
-
-```{r}
-heat_milan %>%
-  drop_na(fuel_type_1, veh_category, emission_standard) %>%
-  group_by(veh_category, fuel_type_1, emission_standard) %>%
-  rename(`Vehicle category` = veh_category,
-         `Fuel type` = fuel_type_1,
-         `Euro class` = emission_standard) %>%
-  summarise(bootMeanDF(pm_fm)) %>%
   mutate(mean = round(mean, 2),
          min = round(min, 2),
          max = round(max, 2)) %>%
@@ -1429,10 +1457,10 @@ heat_milan %>%
 
 # Ambient temperature effects
 
-::: callout-note
-### Note
+::: callout-tip
+### Tip
 
-Measurements are grouped by vehicle class and fuel type. Groups comprising less than 5% of the measurements are excluded.
+Here we consider the effect of ambient temperature on emissions for vehicle and fuel type groups that make up at least 20% of the total measured vehicle fleet.
 :::
 
 ::: panel-tabset
@@ -1440,22 +1468,25 @@ Measurements are grouped by vehicle class and fuel type. Groups comprising less 
 
 ```{r}
 
-temperature <- heat_milan %>%
-  drop_na(fuel_type_1, veh_class, amb_temp) %>%
-  mutate(label = paste0(veh_class, " (", fuel_type_1, ")"),
-         label = fct_lump_prop(label, prop = 0.05)) %>%
-  select(label, contains("fm"), amb_temp, veh_class, fuel_type_1) 
+temperature <- rs_dat %>%
+  drop_na(fuel_type, veh_class, amb_temp) %>%
+  filter(valid_status == "TRUE") %>%
+  mutate(label = paste0(veh_class, " (", fuel_type, ")"),
+         label = fct_lump_prop(label, prop = 0.2)) %>%
+  select(label, contains("fm"), amb_temp, veh_class, fuel_type) 
 
 ggplot(filter(temperature, label != "Other"), aes(amb_temp, co_fm)) + 
-  stat_smooth(method = "gam", formula = y ~ s(x, k = 5), aes(col = fuel_type_1, fill = fuel_type_1)) +
-  facet_wrap(~veh_class) + 
+  stat_smooth(method = "gam", formula = y ~ s(x, k = 5), aes(col = fuel_type, fill = fuel_type)) +
+  facet_wrap(~label) + 
   labs(x = quickText("Ambient temperature (degreesC)"), 
        y = quickText("Fuel-specific CO (g/kg)"),
        color = "Fuel type") + 
   guides(fill = "none") +
   scale_fill_brewer(palette = "Paired") +
   scale_colour_brewer(palette = "Paired") + 
-  theme_bw()
+  theme_bw() +
+  theme(legend.position = "none")
+
 
 ```
 
@@ -1467,15 +1498,16 @@ ggplot(filter(temperature, label != "Other"), aes(amb_temp, co_fm)) +
 ```{r}
 
 ggplot(filter(temperature, label != "Other"), aes(amb_temp, no_fm)) + 
-  stat_smooth(method = "gam", formula = y ~ s(x, k = 5), aes(col = fuel_type_1, fill = fuel_type_1)) +
-  facet_wrap(~veh_class) + 
+  stat_smooth(method = "gam", formula = y ~ s(x, k = 5), aes(col = fuel_type, fill = fuel_type)) +
+  facet_wrap(~label) + 
   labs(x = quickText("Ambient temperature (degreesC)"), 
        y = quickText("Fuel-specific NO (g/kg)"),
        color = "Fuel type") + 
   guides(fill = "none") +
   scale_fill_brewer(palette = "Paired") +
   scale_colour_brewer(palette = "Paired") + 
-  theme_bw()
+  theme_bw() +
+  theme(legend.position = "none")
 
 ```
 
@@ -1484,15 +1516,16 @@ ggplot(filter(temperature, label != "Other"), aes(amb_temp, no_fm)) +
 ```{r}
 
 ggplot(filter(temperature, label != "Other"), aes(amb_temp, no2_fm)) + 
-  stat_smooth(method = "gam", formula = y ~ s(x, k = 5), aes(col = fuel_type_1, fill = fuel_type_1)) +
-  facet_wrap(~veh_class) + 
+  stat_smooth(method = "gam", formula = y ~ s(x, k = 5), aes(col = fuel_type, fill = fuel_type)) +
+  facet_wrap(~label) + 
   labs(x = quickText("Ambient temperature (degreesC)"), 
        y = quickText("Fuel-specific NO2 (g/kg)"),
        color = "Fuel type") + 
   guides(fill = "none") +
   scale_fill_brewer(palette = "Paired") +
   scale_colour_brewer(palette = "Paired") + 
-  theme_bw()
+  theme_bw() +
+  theme(legend.position = "none")
 
 ```
 
@@ -1501,15 +1534,16 @@ ggplot(filter(temperature, label != "Other"), aes(amb_temp, no2_fm)) +
 ```{r}
 
 ggplot(filter(temperature, label != "Other"), aes(amb_temp, nox_fm)) + 
-  stat_smooth(method = "gam", formula = y ~ s(x, k = 5), aes(col = fuel_type_1, fill = fuel_type_1)) +
-  facet_wrap(~veh_class) + 
+  stat_smooth(method = "gam", formula = y ~ s(x, k = 5), aes(col = fuel_type, fill = fuel_type)) +
+  facet_wrap(~label) + 
   labs(x = quickText("Ambient temperature (degreesC)"), 
        y = quickText("Fuel-specific NOx (g/kg)"),
        color = "Fuel type") + 
   guides(fill = "none") +
   scale_fill_brewer(palette = "Paired") +
   scale_colour_brewer(palette = "Paired") + 
-  theme_bw()
+  theme_bw() +
+  theme(legend.position = "none")
 
 ```
 :::
@@ -1519,15 +1553,16 @@ ggplot(filter(temperature, label != "Other"), aes(amb_temp, nox_fm)) +
 ```{r}
 
 ggplot(filter(temperature, label != "Other"), aes(amb_temp, ch4_fm)) + 
-  stat_smooth(method = "gam", formula = y ~ s(x, k = 5), aes(col = fuel_type_1, fill = fuel_type_1)) +
-  facet_wrap(~veh_class) + 
+  stat_smooth(method = "gam", formula = y ~ s(x, k = 5), aes(col = fuel_type, fill = fuel_type)) +
+  facet_wrap(~label) + 
   labs(x = quickText("Ambient temperature (degreesC)"), 
        y = quickText("Fuel-specific CH4 (g/kg)"),
        color = "Fuel type") + 
   guides(fill = "none") +
   scale_fill_brewer(palette = "Paired") +
   scale_colour_brewer(palette = "Paired") + 
-  theme_bw()
+  theme_bw() +
+  theme(legend.position = "none")
 
 ```
 
@@ -1536,80 +1571,131 @@ ggplot(filter(temperature, label != "Other"), aes(amb_temp, ch4_fm)) +
 ```{r}
 
 ggplot(filter(temperature, label != "Other"), aes(amb_temp, hc_fm)) + 
-  stat_smooth(method = "gam", formula = y ~ s(x, k = 5), aes(col = fuel_type_1, fill = fuel_type_1)) +
-  facet_wrap(~veh_class) + 
+  stat_smooth(method = "gam", formula = y ~ s(x, k = 5), aes(col = fuel_type, fill = fuel_type)) +
+  facet_wrap(~label) + 
   labs(x = quickText("Ambient temperature (degreesC)"), 
        y = quickText("Fuel-specific HC (g/kg)"),
        color = "Fuel type") + 
   guides(fill = "none") +
   scale_fill_brewer(palette = "Paired") +
   scale_colour_brewer(palette = "Paired") + 
-  theme_bw()
-
-```
-
-## PM
-
-```{r}
-
-ggplot(filter(temperature, label != "Other"), aes(amb_temp, pm_fm)) + 
-  stat_smooth(method = "gam", formula = y ~ s(x, k = 5), aes(col = fuel_type_1, fill = fuel_type_1)) +
-  facet_wrap(~veh_class) + 
-  labs(x = quickText("Ambient temperature (degreesC)"), 
-       y = quickText("Fuel-specific PM (g/kg)"),
-       color = "Fuel type") + 
-  guides(fill = "none") +
-  scale_fill_brewer(palette = "Paired") +
-  scale_colour_brewer(palette = "Paired") + 
-  theme_bw()
-
+  theme_bw() +
+  theme(legend.position = "none")
+ 
 ```
 :::
 
-# Deterioration effects
+# Vehicle deterioration effects
 
-## Emissions by vehicle mileage {.tabset}
+::: callout-note
+### Note
 
-Vehicle mileage data from annual technical inspection tests may be available in some cases. This is considered a good proxy for examining the effect of vehicle deterioration on emissions behaviour since it is a direct measure of the distance a vehicle has driven. Examples of the relationship between emissions and vehicle mileage are shown below for CO, NO~x~ and hydrocarbons. This provides useful insight into the effect of vehicle ageing or deterioration on emissions behaviour.
+Vehicle mileage data from annual technical inspection tests may be available. This is considered a good proxy for examining the effect of vehicle deterioration on emissions behaviour since it is a direct measure of the distance a vehicle has driven. Emission measurements associated with mileages less than or equal to 250,000 km are considered here. The effects of vehicle deterioration on emissions above 250,000 km are more uncertain due to the small proportion of measurements available at higher mileages.  
+:::
 
-### CO
+::: panel-tabset
+
+## CO
 
 ```{r}
 
-mileage <- heat_milan %>%
-  drop_na(fuel_type_1, veh_class) %>%
-  mutate(label = paste0(veh_class, " (", fuel_type_1, ")"),
-         label = fct_lump_prop(label, prop = 0.01)) %>%
-  filter(label %in% c("passenger car (petrol)", "passenger car (diesel)")) %>%
+mileage <- rs_dat %>%
+  drop_na(fuel_type, veh_class) %>%
+  filter(valid_status == "TRUE", mileage <= 250000) %>%
+  mutate(label = paste0(veh_class, " (", fuel_type, ")"),
+         label = fct_lump_prop(label, prop = 0.2)) %>%
   select(label, contains("fm"), mileage)
 
-ggplot(mileage, aes(mileage, co_fm)) + 
-  stat_smooth(method = "gam", col = "#6A3D9A", formula = y ~ s(x, k = 5)) +
+ggplot(filter(mileage, label != "Other"), aes(mileage, co_fm)) + 
+  stat_smooth(method = "gam", formula = y ~ s(x, k = 5), aes(col = label, fill = label)) +
   facet_wrap(~label) + 
-  labs(x = "Vehicle mileage", y = quickText("Fuel-specific CO (g/kg)")) 
+  labs(x = "Mileage (km)", 
+       y = quickText("Fuel-specific CO (g/kg)")) + 
+  scale_fill_brewer(palette = "Paired") +
+  scale_colour_brewer(palette = "Paired") + 
+  theme_bw() +
+  theme(legend.position = "none")
+
+```
+
+## NO~x~
+
+::: panel-tabset
+### NO
+
+```{r}
+ggplot(filter(mileage, label != "Other"), aes(mileage, no_fm)) + 
+  stat_smooth(method = "gam", formula = y ~ s(x, k = 5), aes(col = label, fill = label)) +
+  facet_wrap(~label) + 
+  labs(x = "Mileage (km)", 
+       y = quickText("Fuel-specific NO (g/kg)")) + 
+  scale_fill_brewer(palette = "Paired") +
+  scale_colour_brewer(palette = "Paired") + 
+  theme_bw() +
+  theme(legend.position = "none")
+```
+
+### NO~2~
+
+```{r}
+ggplot(filter(mileage, label != "Other"), aes(mileage, no2_fm)) + 
+  stat_smooth(method = "gam", formula = y ~ s(x, k = 5), aes(col = label, fill = label)) +
+  facet_wrap(~label) + 
+  labs(x = "Mileage (km)", 
+       y = quickText("Fuel-specific NO2 (g/kg)")) + 
+  scale_fill_brewer(palette = "Paired") +
+  scale_colour_brewer(palette = "Paired") + 
+  theme_bw() +
+  theme(legend.position = "none")
 ```
 
 ### NO~x~
 
 ```{r}
-ggplot(mileage, aes(mileage, nox_fm)) + 
-  stat_smooth(method = "gam", col = "#6A3D9A", formula = y ~ s(x, k = 5)) +
+ggplot(filter(mileage, label != "Other"), aes(mileage, nox_fm)) + 
+  stat_smooth(method = "gam", formula = y ~ s(x, k = 5), aes(col = label, fill = label)) +
   facet_wrap(~label) + 
-  labs(x = "Vehicle mileage", y = quickText("Fuel-specific NOx (g/kg)")) 
+  labs(x = "Mileage (km)", 
+       y = quickText("Fuel-specific NOx (g/kg)")) + 
+  scale_fill_brewer(palette = "Paired") +
+  scale_colour_brewer(palette = "Paired") + 
+  theme_bw() +
+  theme(legend.position = "none")
 ```
 
-### HC
+:::
+
+## CH~4~
 
 ```{r}
-ggplot(mileage, aes(mileage, hc_fm)) + 
-  stat_smooth(method = "gam", col = "#6A3D9A", formula = y ~ s(x, k = 5)) +
+ggplot(filter(mileage, label != "Other"), aes(mileage, ch4_fm)) + 
+  stat_smooth(method = "gam", formula = y ~ s(x, k = 5), aes(col = label, fill = label)) +
   facet_wrap(~label) + 
-  labs(x = "Vehicle mileage", y = quickText("Fuel-specific HC (g/kg)"))  
+  labs(x = "Mileage (km)", 
+       y = quickText("Fuel-specific CH4 (g/kg)")) + 
+  scale_fill_brewer(palette = "Paired") +
+  scale_colour_brewer(palette = "Paired") + 
+  theme_bw() +
+  theme(legend.position = "none")
 ```
 
-## Emissions by vehicle age {.tabset}
 
-Useful proxy when vehicle mileage data not available.
+## HC
+
+```{r}
+ggplot(filter(mileage, label != "Other"), aes(mileage, hc_fm)) + 
+  stat_smooth(method = "gam", formula = y ~ s(x, k = 5), aes(col = label, fill = label)) +
+  facet_wrap(~label) + 
+  labs(x = "Mileage (km)", 
+       y = quickText("Fuel-specific HC (g/kg)")) + 
+  scale_fill_brewer(palette = "Paired") +
+  scale_colour_brewer(palette = "Paired") + 
+  theme_bw() +
+  theme(legend.position = "none")
+```
+
+
+:::
 
 # Distance specific emissions
 
