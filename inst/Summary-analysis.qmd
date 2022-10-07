@@ -1,7 +1,11 @@
 ---
 title: "Summary Analysis of Remote Emission Sensing Data"
 author: "Naomi Farren, David Carslaw"
-format: html
+format:
+  html:
+    toc: true
+    number-sections: true
+    self-contained: true
 editor: visual
 
 #author: Naomi Farren, David Carslaw 
