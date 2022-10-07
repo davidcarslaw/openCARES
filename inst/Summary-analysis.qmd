@@ -22,6 +22,7 @@ bibliography: references.bib
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 library(openCARES)
 library(tidyverse)
+library(forcats)
 library(gt)
 library(DT)
 library(plotly)
@@ -31,9 +32,7 @@ library(treemap)
 library(lubridate)
 theme_set(theme_minimal())
 
-load(file = "C:/Users/Naomi/My Drive/openCARES/data/rs_dat.rda")
-
-rs_dat <- rs_dat %>%
+rs_dat <- milan_rs %>%
   mutate(
     fuel_type = case_when(
       is.na(fuel_type_2) ~ fuel_type_1,
@@ -90,7 +89,7 @@ A description of the individual data fields required for analysis is provided in
 | Name         | Description                              |
 |--------------|------------------------------------------|
 | date_time    | ISO 8601 e.g. 2021-09-23T16:11:42.10008Z |
-| co_co2       | mol/mol check these?                                  |
+| co_co2       | mol/mol check these?                     |
 | no_co2       | mol/mol                                  |
 | no2_co2      | mol/mol                                  |
 | hc_co2       | mol/mol                                  |
@@ -103,7 +102,7 @@ A description of the individual data fields required for analysis is provided in
 : Table 2. Required measurement data fields.
 
 | Name              | Description                                                                  |
-|-------------------|-----------------------------------------------------|
+|--------------------|----------------------------------------------------|
 | fuel_type_1       | Fuel type (fuel type 1 for bi-fuel and hybrid) e.g. diesel, petrol, CNG, LPG |
 | fuel_type_2       | Fuel type 2 for bi-fuel and hybrid e.g. CNG, LPG, electricity                |
 | veh_class         | passenger car, light commercial vehicle, bus, light 2/3/4 wheeler, truck     |
@@ -665,8 +664,7 @@ ggplot(filter(euro, pollutant == "co", n > 100, label != "Other"),
 ::: callout-tip
 #### Tip
 
-NO~x~ represents the sum of NO and NO~2~. To generate NO~x~ emission factors, NO emission factors are multiplied by 46/30 to generate 'NO as NO~2~ equivalent` emission factors, which are then added to the NO~2~ emission factors.  
-
+NO~x~ represents the sum of NO and NO~2~. To generate NO~x~ emission factors, NO emission factors are multiplied by 46/30 to generate 'NO as NO~2~ equivalent\` emission factors, which are then added to the NO~2~ emission factors.
 :::
 
 ::: panel-tabset
@@ -737,8 +735,7 @@ ggplot(filter(euro, pollutant == "hc", n > 100), aes(x = emission_standard, y = 
 ::: callout-note
 ### Note
 
-Measurements are grouped by vehicle class and fuel type. Groups comprising less than 5% of the measurements are excluded. Emission values are shown when the number of measurements for a particular vehicle registration year within a group is greater than 100. 
-
+Measurements are grouped by vehicle class and fuel type. Groups comprising less than 5% of the measurements are excluded. Emission values are shown when the number of measurements for a particular vehicle registration year within a group is greater than 100.
 :::
 
 ::: panel-tabset
@@ -746,17 +743,17 @@ Measurements are grouped by vehicle class and fuel type. Groups comprising less 
 
 ```{r}
 reg_year <- rs_dat %>%
-  drop_na(fuel_type, veh_class, reg_date_domestic) %>%
-  filter(valid_status == "TRUE") %>%
-  mutate(label = paste0(veh_class, " (", fuel_type, ")"),
-         label = fct_lump_prop(label, prop = 0.05)) %>%
-  select(label, contains("fm"), reg_date_domestic, veh_class, fuel_type) %>%
-  pivot_longer(contains("fm"), names_to = "pollutant", values_to = "fm") %>%
-  mutate(reg_date_domestic = dmy(reg_date_domestic),
-         pollutant = str_remove_all(pollutant, "_fm"),
-         reg_year = lubridate::year(reg_date_domestic)) %>%
-  group_by(label, reg_year, pollutant, veh_class, fuel_type) %>%
-  summarise(bootMeanDF(fm))
+    drop_na(fuel_type, veh_class, reg_date_domestic) %>%
+    filter(valid_status == "TRUE") %>%
+    mutate(label = paste0(veh_class, " (", fuel_type, ")"),
+           label = forcats::fct_lump_prop(label, prop = 0.05)) %>%
+    select(label, contains("fm"), reg_date_domestic, veh_class, fuel_type) %>%
+    pivot_longer(contains("fm"), names_to = "pollutant", values_to = "fm") %>%
+    mutate(reg_date_domestic = lubridate::ymd(reg_date_domestic),
+           pollutant = str_remove_all(pollutant, "_fm"),
+           reg_year = lubridate::year(reg_date_domestic)) %>%
+    group_by(label, reg_year, pollutant, veh_class, fuel_type) %>%
+    summarise(bootMeanDF(fm))
 
 ggplot(filter(reg_year, pollutant == "co", n > 100, reg_year >= 2000, label != "Other"), 
        aes(x = reg_year, y = mean, fill = veh_class, colour = veh_class, size = n)) + 
@@ -876,7 +873,6 @@ ggplot(filter(reg_year, pollutant == "hc", n > 100, reg_year >= 2000, label != "
   theme_bw() 
 
 ```
-
 :::
 
 ## Emissions by manufacturer
@@ -1204,7 +1200,7 @@ ggplot(manu_hc, aes(ymin = 0)) +
 ::: callout-tip
 ### Tip
 
-The pollutant emission factors provided in the emission summary tables and detailed pollutant summary tables are expressed as grams of pollutant per kilogram of fuel. 'n' shows the number of measurements in each group. 
+The pollutant emission factors provided in the emission summary tables and detailed pollutant summary tables are expressed as grams of pollutant per kilogram of fuel. 'n' shows the number of measurements in each group.
 :::
 
 ::: panel-tabset
@@ -1590,11 +1586,10 @@ ggplot(filter(temperature, label != "Other"), aes(amb_temp, hc_fm)) +
 ::: callout-note
 ### Note
 
-Vehicle mileage data from annual technical inspection tests may be available. This is considered a good proxy for examining the effect of vehicle deterioration on emissions behaviour since it is a direct measure of the distance a vehicle has driven. Emission measurements associated with mileages less than or equal to 250,000 km are considered here. The effects of vehicle deterioration on emissions above 250,000 km are more uncertain due to the small proportion of measurements available at higher mileages.  
+Vehicle mileage data from annual technical inspection tests may be available. This is considered a good proxy for examining the effect of vehicle deterioration on emissions behaviour since it is a direct measure of the distance a vehicle has driven. Emission measurements associated with mileages less than or equal to 250,000 km are considered here. The effects of vehicle deterioration on emissions above 250,000 km are more uncertain due to the small proportion of measurements available at higher mileages.
 :::
 
 ::: panel-tabset
-
 ## CO
 
 ```{r}
@@ -1662,7 +1657,6 @@ ggplot(filter(mileage, label != "Other"), aes(mileage, nox_fm)) +
   theme_bw() +
   theme(legend.position = "none")
 ```
-
 :::
 
 ## CH~4~
@@ -1679,7 +1673,6 @@ ggplot(filter(mileage, label != "Other"), aes(mileage, ch4_fm)) +
   theme(legend.position = "none")
 ```
 
-
 ## HC
 
 ```{r}
@@ -1693,8 +1686,6 @@ ggplot(filter(mileage, label != "Other"), aes(mileage, hc_fm)) +
   theme_bw() +
   theme(legend.position = "none")
 ```
-
-
 :::
 
 # Distance specific emissions
