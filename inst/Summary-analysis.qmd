@@ -81,10 +81,10 @@ A description of the individual data fields required for analysis is provided in
 | Name      | Description                   |
 |-----------|-------------------------------|
 | site_name | Site name                     |
-| latitude  | Decimal degrees e.g. 45.45234 |
-| longitude | Decimal degrees e.g. 9.19894  |
-| altitude  | Elevation (m)                 |
-| slope     | Road grade (unit?)            |
+| latitude  | Latitude (dec °)              |
+| longitude | Longitude (dec °)             |
+| altitude  | Altitude (m)                  |
+| slope     | Road slope (°)                |
 | amb_temp  | Ambient temperature (°C)      |
 | amb_rhum  | Relative humidity (%)         |
 
@@ -93,28 +93,27 @@ A description of the individual data fields required for analysis is provided in
 | Name         | Description                              |
 |--------------|------------------------------------------|
 | date_time    | ISO 8601 e.g. 2021-09-23T16:11:42.10008Z |
-| co_co2       | mol/mol check these?                     |
-| no_co2       | mol/mol                                  |
-| no2_co2      | mol/mol                                  |
-| hc_co2       | mol/mol                                  |
-| ch4_co2      | mol/mol                                  |
-| pm_co2       | mol/mol                                  |
-| valid_status | TRUE or FALSE                            |
-| speed        | km h^-1^                                 |
-| vsp_calc     | vehicle specific power (kW t^-1^)        |
+| co_fm        | Fuel-specific CO emissions (g kg^-1^)    |
+| no_fm        | Fuel-specific NO emissions (g kg^-1^)    |
+| no2_fm       | Fuel-specific NO~2~ emissions (g kg^-1^) |
+| hc_fm        | Fuel-specific HC emissions (g kg^-1^)    |
+| ch4_fm       | Fuel-specific CH~4~ emissions (g kg^-1^) |
+| valid_status | Valid measurement (TRUE or FALSE)        |
+| speed        | Vehicle speed (km h^-1^)                 |
+| vsp_calc     | Calculated VSP according to U.S. EPA (kW t^-1^) |
 
 : Table 2. Required measurement data fields.
 
 | Name              | Description                                                                  |
 |--------------------|----------------------------------------------------|
-| fuel_type_1       | Fuel type (fuel type 1 for bi-fuel and hybrid) e.g. diesel, petrol, CNG, LPG |
-| fuel_type_2       | Fuel type 2 for bi-fuel and hybrid e.g. CNG, LPG, electricity                |
-| veh_class         | passenger car, light commercial vehicle, bus, light 2/3/4 wheeler, truck     |
-| emission_standard | Euro 5, Euro 6, Euro 6d-TEMP, Euro 6d                                        |
-| make_domain       | Manufacturer e.g. Fiat, Nissan, VW                                           |
-| reg_date_domestic | Registration date (dd/mm/yyyy)                                               |
-| veh_category      | M1, M1G, N1, L1e                                                             |
-| mileage           | km                                                                           |
+| fuel_type_1       | Primary fuel type e.g. diesel, petrol, CNG, LPG |
+| fuel_type_2       | Secondary fuel type for bi-fuel and hybrid e.g. CNG, LPG, electricity        |
+| veh_class         | Vehicle class e.g. passenger car    |
+| emission_standard | Emission standard e.g. Euro 5                                       |
+| make_domain       | Manufacturer e.g. Fiat, Nissan, Volkswagen                                   |
+| reg_date_domestic | Registration date (yyyy/mm/dd)                                               |
+| veh_category      | UNECE vehicle category e.g. M1                                               |
+| mileage           | Odometer ready from technical inspection (km)                                |
 
 : Table 3. Required vehicle data fields.
 
@@ -595,46 +594,6 @@ Emission values are shown when the number of measurements for a particular vehic
 
 ::: panel-tabset
 ### CO
-
-```{r}
-
-# code to be used to calculate g/kg directly from ratios. 
-# not matching g/kg columns - check
-
-# rs_dat %>% 
-#   mutate(
-#     co_gpkg = case_when(
-#       fuel_type %in% c("diesel", "petrol", "diesel electricity", "petrol electricity") ~ ((28*co_co2*860)/(1+co_co2+(2*3*hc_co2))*12),
-#       fuel_type %in% c("CNG", "petrol CNG", "diesel CNG") ~ ((28*co_co2*750)/(1+co_co2+(3.3*1*hc_co2))*12),
-#       fuel_type %in% c("LPG", "diesel LPG", "petrol LPG") ~ ((28*co_co2*820)/(1+co_co2+(1*3*hc_co2))*12),
-#       TRUE ~ NA_real_
-#     ),
-#     no_gpkg = case_when(
-#       fuel_type %in% c("diesel", "petrol", "diesel electricity", "petrol electricity") ~ ((30*no_co2*860)/(1+co_co2+(2*3*hc_co2))*12),
-#       fuel_type %in% c("CNG", "petrol CNG", "diesel CNG") ~ ((30*no_co2*750)/(1+co_co2+(3.3*1*hc_co2))*12),
-#       fuel_type %in% c("LPG", "diesel LPG", "petrol LPG") ~ ((30*no_co2*820)/(1+co_co2+(1*3*hc_co2))*12),
-#       TRUE ~ NA_real_
-#     ),
-#     no2_gpkg = case_when(
-#       fuel_type %in% c("diesel", "petrol", "diesel electricity", "petrol electricity") ~ ((46*no2_co2*860)/(1+co_co2+(2*3*hc_co2))*12),
-#       fuel_type %in% c("CNG", "petrol CNG", "diesel CNG") ~ ((46*no2_co2*750)/(1+co_co2+(3.3*1*hc_co2))*12),
-#       fuel_type %in% c("LPG", "diesel LPG", "petrol LPG") ~ ((46*no2_co2*820)/(1+co_co2+(1*3*hc_co2))*12),
-#       TRUE ~ NA_real_
-#     ),
-#     nox_gpkg = (no_gpkg*(46/30) + no2_gpkg),
-#     hc_gpkg = case_when(
-#       fuel_type %in% c("diesel", "petrol", "diesel electricity", "petrol electricity") ~ ((2*44*hc_co2*860)/(1+co_co2+(2*3*hc_co2))*12),
-#       fuel_type %in% c("CNG", "petrol CNG", "diesel CNG") ~ ((3.33*16*hc_co2*750)/(1+co_co2+(3.3*1*hc_co2))*12),
-#       fuel_type %in% c("LPG", "diesel LPG", "petrol LPG") ~ ((1*44*hc_co2*820)/(1+co_co2+(1*3*hc_co2))*12),
-#       TRUE ~ NA_real_
-#     ),
-#     ch4_gpkg = case_when(
-#       fuel_type %in% c("diesel", "petrol", "diesel electricity", "petrol electricity") ~ ((14*ch4_co2*860)/(1+co_co2+(2*3*hc_co2))*12),
-#       fuel_type %in% c("CNG", "petrol CNG", "diesel CNG") ~ ((14*ch4_co2*750)/(1+co_co2+(3.3*1*hc_co2))*12),
-#       fuel_type %in% c("LPG", "diesel LPG", "petrol LPG") ~ ((14*ch4_co2*820)/(1+co_co2+(1*3*hc_co2))*12),
-#       TRUE ~ NA_real_
-#     ))
-```
 
 ```{r}
 euro <- rs_dat %>%
