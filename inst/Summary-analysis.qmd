@@ -7,18 +7,6 @@ format:
     number-sections: true
     self-contained: true
 editor: visual
-
-#author: Naomi Farren, David Carslaw 
-#date: "`r paste('Date:', format(Sys.time(), '%d %B, %Y'))`"
-#output:
-#  bookdown::html_document2: 
- #   theme: flatly
- #   toc: yes
- #   toc_float:
- #     collapsed: false
-#bibliography: DCC-refs.bib
-#link-citations: true
-#bibliography: references.bib
 bibliography: references.bib
 ---
 
