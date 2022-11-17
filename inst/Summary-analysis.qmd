@@ -24,7 +24,9 @@ library(treemap)
 library(lubridate)
 theme_set(theme_minimal())
 
-rs_dat <- milan_rs %>%
+rs_dat <- openCARES::rs_dat 
+
+rs_dat <- rs_dat %>%
   mutate(
     fuel_type = case_when(
       is.na(fuel_type_2) ~ fuel_type_1,
@@ -36,64 +38,46 @@ rs_dat <- milan_rs %>%
 
 # Introduction
 
-The goal of the City Air Remote Emission Sensing [CARES](https://cares-project.eu) project is to reduce the hurdles for the practical application of remote emission sensing and to make it a widespread means for the monitoring and enforcement of vehicle emissions, leading to improvements in air pollution. This document forms part of work package 4, which aims to enable cities and other administrations to set up remote emission sensing (RES) measurements more easily and to quicker analyse the data. Here an open-access software package has been developed, containing a suite of user functions that are designed to answer typical questions on the emission performance of the vehicles measured.
+The goal of the City Air Remote Emission Sensing ([CARES](https://cares-project.eu)) project is to reduce the hurdles for the practical application of remote emission sensing (RES) and to make it a widespread means for the monitoring and enforcement of vehicle emissions. The analysis of RES data can be challenging, given the complexity and typical size of the data collected during experimental campaigns. Even within the small community of researchers and practitioners that typically conduct experiments, there is a wide variation in the analysis approaches used and their consistency.
 
-## Aims
+Here we provide a reliable way of presenting key summary data and plots from RES measurement campaigns, through the production of an automated summary report. End users can compile a report based on their own RES data, which should enable cities and other administrations to more quickly analyse RES data from previous and future measurement campaigns.  
 
-The analysis of remote emission sensing (RES) data can be challenging, given the complexity and typical size of the data collected during experimental campaigns. Even within the small community of researchers and practitioners that typically conduct experiments, there is a wide variation in the analysis approaches used and their consistency. With that in mind, this document aims to:
-
-1.  Provide a reliable and automated way of presenting key summary data and plots from RES campaigns.
-
-2.  Adopt 'modern' data analysis approaches using [R Statistical Software](https://www.r-project.org) and automated report production using [Quarto](https://quarto.org/).
-
-3.  Present common numerical and graphical outputs that help to interpret data from RES campaigns.
-
-The use of R software and Quarto offers many advantages over traditional ways of analysing and presenting data. For example, allowing for detailed data to be presented in a compact way that can be easily filtered by the users, and the use of 'tabs' to better structure the output.
+In brief, the report first provides an overview of measurement site conditions and the measured vehicle fleet composition. Next, an evaluation of fuel-specific emission factors is provided, grouped by vehicle type, fuel type, emission standard, manufacturer and so on. Finally the effect of ambient temperature and vehicle deterioration on emissions is explored. 
 
 ::: callout-tip
 ### openCARES
 
-The analysis software and the underlying code that produced this document are part of a R package called `openCARES`. The package is available as a GitHub repository and all code is managed under a version control system. The approach means that all changes are recorded and that members of the CARES team can work collaboratively to develop the analysis capabilities over time. Access to the `openCARES` repository can be found [here](https://github.com/naomifarren/openCARES).
+The analysis software and underlying code that produced this document are part of a R package called `openCARES`. The package is available as a GitHub repository and all code is managed under a version control system. The approach means that all changes are recorded and that members of the CARES team can work collaboratively to develop the analysis capabilities over time. Access to the `openCARES` repository can be found [here](https://github.com/naomifarren/openCARES).
 :::
 
 ## Data requirements
 
-Example data is used to demonstrate the types of analysis that can be performed using the `openCARES` package. An evaluation of the vehicle fleet composition and site conditions is provided, in addition to fuel-specific emission factors, grouped by vehicle type, fuel type, emission standard, manufacturer and so on. The effect of ambient temperature and vehicle deterioration on emissions is explored and distance-specific factors are calculated. The example data was collected in 2021 during a city demonstration measurement campaign in Milan, Italy, conducted as part of the CARES project. The data set consists of approximately 35,500 measurements collected using an Emissions Detection and Reporting (EDAR) system, developed by Hager Environmental & Atmospheric Technologies (HEAT). Provided that the data requirements outlined below are met, the analysis can be conducted on other data sets collected using a wide range of RES techniques, such as cross-road remote sensing, plume chasing and point sampling.
+Example data is used to demonstrate the types of analysis that can be performed using the `openCARES` package. The data was collected in 2021 during a city demonstration measurement campaign in Milan, Italy, conducted as part of the CARES project. The dataset consists of approximately 35,500 measurements obtained using an Emissions Detection and Reporting (EDAR) system, developed by Hager Environmental & Atmospheric Technologies (HEAT). Provided that the data requirements outlined below are met, the analysis can be conducted on other data sets collected using a wide range of RES techniques, such as cross-road remote sensing, plume chasing and point sampling.
 
 ::: callout-important
 ## Data field specifications
 
-A description of the individual data fields required for analysis is provided in Tables 1-3. The data must be in the correct format and appropriate units prior to running the analysis. The end user can download and edit their own version of the source code if necessary.
+A description of the individual data fields required for analysis is provided in Table 1. The data must be in the correct format and units prior to running the analysis. End users have the option to download and edit their own version of the source code. 
 :::
 
-| Name      | Description               |
-|-----------|---------------------------|
-| site_name | Site name                 |
-| latitude  | Latitude (dec °)         |
-| longitude | Longitude (dec °)        |
-| altitude  | Altitude (m)              |
-| slope     | Road slope (°)           |
-| amb_temp  | Ambient temperature (°C) |
-| amb_rhum  | Relative humidity (%)     |
-
-: Table 1. Required site data fields.
-
-| Name         | Description                                     |
-|--------------|-------------------------------------------------|
-| date_time    | ISO 8601 e.g. 2021-09-23T16:11:42.10008Z        |
-| co_fm        | Fuel-specific CO emissions (g kg^-1^)           |
-| no_fm        | Fuel-specific NO emissions (g kg^-1^)           |
-| no2_fm       | Fuel-specific NO~2~ emissions (g kg^-1^)        |
-| hc_fm        | Fuel-specific HC emissions (g kg^-1^)           |
-| ch4_fm       | Fuel-specific CH~4~ emissions (g kg^-1^)        |
-| valid_status | Valid measurement (TRUE or FALSE)               |
-| speed        | Vehicle speed (km h^-1^)                        |
-| vsp_calc     | Calculated VSP according to U.S. EPA (kW t^-1^) |
-
-: Table 2. Required measurement data fields.
-
 | Name              | Description                                                           |
-|-------------------|-----------------------------------------------------------------------|
+|------------------ |-----------------------------------------------------------------------|
+| site_name         | Site name                                                             |
+| latitude          | Latitude (dec °)                                                      |
+| longitude         | Longitude (dec °)                                                     |
+| altitude          | Altitude (m)                                                          |
+| slope             | Road slope (°)                                                        |
+| amb_temp          | Ambient temperature (°C)                                              |
+| amb_rhum          | Relative humidity (%)                                                 |
+| date_time         | ISO 8601 e.g. 2021-09-23T16:11:42.10008Z                              |
+| co_fm             | Fuel-specific CO emissions (g kg^-1^)                                 |
+| no_fm             | Fuel-specific NO emissions (g kg^-1^)                                 |
+| no2_fm            | Fuel-specific NO~2~ emissions (g kg^-1^)                              |
+| hc_fm             | Fuel-specific HC emissions (g kg^-1^)                                 |
+| ch4_fm            | Fuel-specific CH~4~ emissions (g kg^-1^)                              |
+| valid_status      | Valid measurement (TRUE or FALSE)                                     |
+| speed             | Vehicle speed (km h^-1^)                                              |
+| vsp_calc          | Calculated VSP according to U.S. EPA (kW t^-1^)                       |
 | fuel_type_1       | Primary fuel type e.g. diesel, petrol, CNG, LPG                       |
 | fuel_type_2       | Secondary fuel type for bi-fuel and hybrid e.g. CNG, LPG, electricity |
 | veh_class         | Vehicle class e.g. passenger car                                      |
@@ -101,9 +85,9 @@ A description of the individual data fields required for analysis is provided in
 | make_domain       | Manufacturer e.g. Fiat, Nissan, Volkswagen                            |
 | reg_date_domestic | Registration date (yyyy/mm/dd)                                        |
 | veh_category      | UNECE vehicle category e.g. M1                                        |
-| mileage           | Odometer ready from technical inspection (km)                         |
+| mileage           | Odometer reading from technical inspection (km)                         |
 
-: Table 3. Required vehicle data fields.
+: Table 1. Required data fields for the production of the automated summary report.
 
 ::: callout-note
 ### Hybrid vehicles
@@ -700,7 +684,7 @@ reg_year <- rs_dat %>%
            label = forcats::fct_lump_prop(label, prop = 0.05)) %>%
     select(label, contains("fm"), reg_date_domestic, veh_class, fuel_type) %>%
     pivot_longer(contains("fm"), names_to = "pollutant", values_to = "fm") %>%
-    mutate(reg_date_domestic = lubridate::ymd(reg_date_domestic),
+    mutate(reg_date_domestic = lubridate::dmy(reg_date_domestic),
            pollutant = str_remove_all(pollutant, "_fm"),
            reg_year = lubridate::year(reg_date_domestic)) %>%
     group_by(label, reg_year, pollutant, veh_class, fuel_type) %>%
@@ -1638,7 +1622,3 @@ ggplot(filter(mileage, label != "Other"), aes(mileage, hc_fm)) +
   theme(legend.position = "none")
 ```
 :::
-
-# Distance specific emissions
-
-[@davison2020]
