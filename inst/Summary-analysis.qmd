@@ -78,42 +78,42 @@ Example data is used to demonstrate the types of analysis that can be performed 
 A description of the individual data fields required for analysis is provided in Tables 1-3. The data must be in the correct format and appropriate units prior to running the analysis. The end user can download and edit their own version of the source code if necessary.
 :::
 
-| Name      | Description                   |
-|-----------|-------------------------------|
-| site_name | Site name                     |
-| latitude  | Latitude (dec °)              |
-| longitude | Longitude (dec °)             |
-| altitude  | Altitude (m)                  |
-| slope     | Road slope (°)                |
-| amb_temp  | Ambient temperature (°C)      |
-| amb_rhum  | Relative humidity (%)         |
+| Name      | Description               |
+|-----------|---------------------------|
+| site_name | Site name                 |
+| latitude  | Latitude (dec °)         |
+| longitude | Longitude (dec °)        |
+| altitude  | Altitude (m)              |
+| slope     | Road slope (°)           |
+| amb_temp  | Ambient temperature (°C) |
+| amb_rhum  | Relative humidity (%)     |
 
 : Table 1. Required site data fields.
 
-| Name         | Description                              |
-|--------------|------------------------------------------|
-| date_time    | ISO 8601 e.g. 2021-09-23T16:11:42.10008Z |
-| co_fm        | Fuel-specific CO emissions (g kg^-1^)    |
-| no_fm        | Fuel-specific NO emissions (g kg^-1^)    |
-| no2_fm       | Fuel-specific NO~2~ emissions (g kg^-1^) |
-| hc_fm        | Fuel-specific HC emissions (g kg^-1^)    |
-| ch4_fm       | Fuel-specific CH~4~ emissions (g kg^-1^) |
-| valid_status | Valid measurement (TRUE or FALSE)        |
-| speed        | Vehicle speed (km h^-1^)                 |
+| Name         | Description                                     |
+|--------------|-------------------------------------------------|
+| date_time    | ISO 8601 e.g. 2021-09-23T16:11:42.10008Z        |
+| co_fm        | Fuel-specific CO emissions (g kg^-1^)           |
+| no_fm        | Fuel-specific NO emissions (g kg^-1^)           |
+| no2_fm       | Fuel-specific NO~2~ emissions (g kg^-1^)        |
+| hc_fm        | Fuel-specific HC emissions (g kg^-1^)           |
+| ch4_fm       | Fuel-specific CH~4~ emissions (g kg^-1^)        |
+| valid_status | Valid measurement (TRUE or FALSE)               |
+| speed        | Vehicle speed (km h^-1^)                        |
 | vsp_calc     | Calculated VSP according to U.S. EPA (kW t^-1^) |
 
 : Table 2. Required measurement data fields.
 
-| Name              | Description                                                                  |
-|--------------------|----------------------------------------------------|
-| fuel_type_1       | Primary fuel type e.g. diesel, petrol, CNG, LPG |
-| fuel_type_2       | Secondary fuel type for bi-fuel and hybrid e.g. CNG, LPG, electricity        |
-| veh_class         | Vehicle class e.g. passenger car    |
-| emission_standard | Emission standard e.g. Euro 5                                       |
-| make_domain       | Manufacturer e.g. Fiat, Nissan, Volkswagen                                   |
-| reg_date_domestic | Registration date (yyyy/mm/dd)                                               |
-| veh_category      | UNECE vehicle category e.g. M1                                               |
-| mileage           | Odometer ready from technical inspection (km)                                |
+| Name              | Description                                                           |
+|-------------------|-----------------------------------------------------------------------|
+| fuel_type_1       | Primary fuel type e.g. diesel, petrol, CNG, LPG                       |
+| fuel_type_2       | Secondary fuel type for bi-fuel and hybrid e.g. CNG, LPG, electricity |
+| veh_class         | Vehicle class e.g. passenger car                                      |
+| emission_standard | Emission standard e.g. Euro 5                                         |
+| make_domain       | Manufacturer e.g. Fiat, Nissan, Volkswagen                            |
+| reg_date_domestic | Registration date (yyyy/mm/dd)                                        |
+| veh_category      | UNECE vehicle category e.g. M1                                        |
+| mileage           | Odometer ready from technical inspection (km)                         |
 
 : Table 3. Required vehicle data fields.
 
