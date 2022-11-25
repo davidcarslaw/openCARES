@@ -3,7 +3,7 @@
 
 # openCARES: tools for vehicle remote emission sensing analysis
 
-<img src="inst/CARES_logo.jpeg" alt="CARES logo" width="35%" class="center"/>
+<img src="inst/CARES_logo.jpeg" alt="CARES logo" class="center" width="35%"/>
 
 ## Introduction
 
@@ -32,17 +32,42 @@ challenging and within the community of researchers and practitioners
 that typically conduct experiments, there is a wide variation in the
 analysis approaches used and their consistency.
 
-The main component of the openCARES package is the production of an
+The main component of the `openCARES` package is the production of an
 **automated summary report**, which provides a quick and reliable way of
-presenting key summary data and plots from remote emission sensing
-measurement campaigns. End users can compile a report based on their own
-remote emission sensing data. The report provides details of measurement
-site conditions, vehicle fleet composition, and an evaluation of
+presenting key summary data and plots from remote sensing measurement
+campaigns. End users can compile a report based on their own remote
+emission sensing data. The report provides details of measurement site
+conditions, vehicle fleet composition, and an evaluation of
 fuel-specific emission factors by vehicle type, fuel type, emission
 standard, manufacturer and so on. The effect of ambient temperature and
 vehicle deterioration on emissions is also explored.
 
+The package aims to provide key summaries of emissions and the vehicle
+fleet that will typically be of common interest. All the analysis code
+is available in the package and can be modified and extended. The
+package contains an example data set from a remote sensing campaign held
+in Milan in 2021.
+
 ### Producing the summary report
 
-(Add some instructions here on how users can produce the report using
-their own data)
+The summary report was written in [Quarto](https://quarto.org), a system
+that enables a rich selection of outputs to be produced using R code as
+well as other programming languages such as Python. The easiest way to
+compile a report is to download a free version of the [RStudio
+IDE](https://posit.co/products/open-source/rstudio/), which recognises
+the Quarto format. The compiled report is an html document that can be
+opened in a browser. This choice of output was chosen in preference to
+pdf or Word because of the range of useful interactive capabilities
+available in html format. These capabilities make the investigation of
+remote sensing data engaging and informative, allowing the user to
+easily interrogate much of the data. The source file to test is
+available in the repository itself
+(/inst/[Summary-analysis.qmd](https://github.com/davidcarslaw/openCARES/blob/master/inst/Summary-analysis.qmd "Summary-analysis.qmd")).
+This file can easily be edited to change or extend the analysis
+undertaken using R code.
+
+To produce an automated report using data other than that provided by
+the `openCARES` package requires that certain field names exist in the
+data set. A summary of the required fields is given in the compiled
+report
+[Summary-analysis](https://github.com/davidcarslaw/openCARES/blob/master/inst/Summary-analysis.qmd "Summary-analysis.qmd").html.
