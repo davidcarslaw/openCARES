@@ -26,7 +26,7 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-The **openCARES** R package contains tools to assist with the analysis of vehicle remote emission sensing data. The tools focus on the development of new insights from potentially complex data sets. This is anticipated to be useful for those working on the development of remote emission sensing technologies, in addition to end users such as city authorities, who want to better understand real-world emissions. The package has been developed under the framework of the City Air Remote Emission Sensing (CARES) project. For the main CARES website, see <https://cares-project.eu/>.
+The **openCARES** R package contains tools to assist with the analysis of vehicle remote emission sensing (RES) data and provide new insights from potentially complex data sets. This is anticipated to be useful for those working on the development of RES technologies, in addition to end users such as city authorities, who want to better understand real-world vehicle emissions. The package has been developed under the framework of the City Air Remote Emission Sensing (CARES) project. For the main CARES website, see <https://cares-project.eu/>.
 
 ## Package installation
 
@@ -35,7 +35,7 @@ require(devtools)
 install_github('davidcarslaw/openCARES')
 ```
 
-## Summary analysis report
+## Automated analysis
 
 The goal of the CARES project is to reduce the hurdles for the practical application of remote emission sensing. The analysis of RES data can be challenging and within the community of researchers and practitioners that typically conduct experiments, there is a wide variation in the analysis approaches used and their consistency.
 
