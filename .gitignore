@@ -3,3 +3,7 @@
 .RData
 .Ruserdata
 *.html
+.Rprofile
+README_cache
+renv
+renv.lock
