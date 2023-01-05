@@ -13,8 +13,7 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   warning = FALSE,
   message = FALSE,
-  eval = FALSE,
-  cache = TRUE
+  eval = FALSE
 )
 knitr::opts_chunk$set(
   fig.path = "tools/"

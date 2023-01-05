@@ -1,17 +1,20 @@
 Package: openCARES
 Type: Package
-Title: What the Package Does (Title Case)
-Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Title: Package to Analyse Vehicle Emission Remote Sensing Data
+Version: 0.1.1
+Date: 2023-01-05
+Authors@R: c(person("Naomi", "Farren", role = c("aut", "cre"), email =
+    "naomi.farren@york.ac.uk"), person("David", "Carslaw", role =
+    "aut", email = "david.carslaw@york.ac.uk"))
+Maintainer: Naomi Farren <naomi.farren@york.ac.uk>
+Description: Summary analysis template in Quarto for the analysis of traditional cross-road or top-down vehicle emission remote sesning measurements.
+License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
+LazyDataCompression: true
 RoxygenNote: 7.2.1
 Depends: 
-    R (>= 2.10),
+    R (>= 3.5.0),
     dplyr,
     tidyr,
     stringr,
