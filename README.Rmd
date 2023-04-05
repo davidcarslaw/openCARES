@@ -30,8 +30,9 @@ The **openCARES** R package contains tools to assist with the analysis of vehicl
 ## Package installation
 
 ```{r}
-require(devtools)
-install_github('davidcarslaw/openCARES')
+if (!require('devtools')) install.packages('devtools')
+devtools::install_github('davidcarslaw/openCARES')
+
 ```
 
 ## Summary analysis report
@@ -40,9 +41,9 @@ The goal of the CARES project is to reduce the hurdles for the practical applica
 
 The main component of the `openCARES` package is the production of an **automated summary report**, which provides a quick and reliable way of presenting key summary data and plots from remote sensing measurement campaigns. End users can compile a report based on their own remote emission sensing data. The report provides details of measurement site conditions, vehicle fleet composition, and an evaluation of fuel-specific emission factors by vehicle type, fuel type, emission standard, manufacturer and so on. The effect of ambient temperature and vehicle deterioration on emissions is also explored.
 
-The package aims to provide key summaries of emissions and the vehicle fleet that will typically be of common interest. All the analysis code is available in the package and can be modified and extended. The package contains an example data set from a remote sensing campaign held in Milan in 2021.
+The package aims to provide key summaries of emissions and the vehicle fleet that will typically be of common interest. All the analysis code is available in the package and can be modified and extended. The package contains an example data set from a remote sensing campaign conducted in 2021.
 
-A summary of the fields available in the example Milan data is given below:
+A summary of the fields available in the example data is given below:
 
 ```{r eval=TRUE}
 library(openCARES)

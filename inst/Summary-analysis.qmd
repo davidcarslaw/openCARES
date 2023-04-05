@@ -40,9 +40,9 @@ rs_dat <- rs_dat %>%
 
 The goal of the City Air Remote Emission Sensing ([CARES](https://cares-project.eu)) project is to reduce the hurdles for the practical application of remote emission sensing (RES) and to make it a widespread means for the monitoring and enforcement of vehicle emissions. The analysis of RES data can be challenging, given the complexity and typical size of the data collected during experimental campaigns. Even within the small community of researchers and practitioners that typically conduct experiments, there is a wide variation in the analysis approaches used and their consistency.
 
-Here we provide a reliable way of presenting key summary data and plots from RES measurement campaigns, through the production of an automated summary report. End users can compile a report based on their own RES data, which should enable cities and other administrations to more quickly analyse RES data from previous and future measurement campaigns.  
+Here we provide a reliable way of presenting key summary data and plots from RES measurement campaigns, through the production of an automated summary report. End users can compile a report based on their own RES data, which should enable cities and other administrations to more quickly analyse RES data from previous and future measurement campaigns.
 
-In brief, the report first provides an overview of measurement site conditions and the measured vehicle fleet composition. Next, an evaluation of fuel-specific emission factors is provided, grouped by vehicle type, fuel type, emission standard, manufacturer and so on. Finally the effect of ambient temperature and vehicle deterioration on emissions is explored. 
+In brief, the report first provides an overview of measurement site conditions and the measured vehicle fleet composition. Next, an evaluation of fuel-specific emission factors is provided, grouped by vehicle type, fuel type, emission standard, manufacturer and so on. Finally the effect of ambient temperature and vehicle deterioration on emissions is explored.
 
 ::: callout-tip
 ### openCARES
@@ -52,16 +52,16 @@ The analysis software and underlying code that produced this document are part o
 
 ## Data requirements
 
-Example data is used to demonstrate the types of analysis that can be performed using the `openCARES` package. The data was collected in 2021 during a city demonstration measurement campaign in Milan, Italy, conducted as part of the CARES project. The dataset consists of approximately 35,500 measurements obtained using an Emissions Detection and Reporting (EDAR) system, developed by Hager Environmental & Atmospheric Technologies (HEAT). Provided that the data requirements outlined below are met, the analysis can be conducted on other data sets collected using a wide range of RES techniques, such as cross-road remote sensing, plume chasing and point sampling.
+Example data is used to demonstrate the types of analysis that can be performed using the `openCARES` package. The data was collected in 2021 as part of the CARES project. The dataset consists of approximately 35,500 measurements obtained using an Emissions Detection and Reporting (EDAR) system, developed by Hager Environmental & Atmospheric Technologies (HEAT). Provided that the data requirements outlined below are met, the analysis can be conducted on other data sets collected using a wide range of RES techniques, such as cross-road remote sensing, plume chasing and point sampling.
 
 ::: callout-important
 ## Data field specifications
 
-A description of the individual data fields required for analysis is provided in Table 1. The data must be in the correct format and units prior to running the analysis. End users have the option to download and edit their own version of the source code. 
+A description of the individual data fields required for analysis is provided in Table 1. The data must be in the correct format and units prior to running the analysis. End users have the option to download and edit their own version of the source code.
 :::
 
 | Name              | Description                                                           |
-|------------------ |-----------------------------------------------------------------------|
+|-----------------|-------------------------------------------------------|
 | site_name         | Site name                                                             |
 | latitude          | Latitude (dec °)                                                      |
 | longitude         | Longitude (dec °)                                                     |
@@ -69,7 +69,7 @@ A description of the individual data fields required for analysis is provided in
 | slope             | Road slope (°)                                                        |
 | amb_temp          | Ambient temperature (°C)                                              |
 | amb_rhum          | Relative humidity (%)                                                 |
-| date_time         | ISO 8601 e.g. 2021-09-23T16:11:42.10008Z                              |
+| date_time         | Local date and time (YYYY-MM-DD HH:mm:ss)                             |
 | co_fm             | Fuel-specific CO emissions (g kg^-1^)                                 |
 | no_fm             | Fuel-specific NO emissions (g kg^-1^)                                 |
 | no2_fm            | Fuel-specific NO~2~ emissions (g kg^-1^)                              |
@@ -83,9 +83,9 @@ A description of the individual data fields required for analysis is provided in
 | veh_class         | Vehicle class e.g. passenger car                                      |
 | emission_standard | Emission standard e.g. Euro 5                                         |
 | make_domain       | Manufacturer e.g. Fiat, Nissan, Volkswagen                            |
-| reg_date_domestic | Registration date (yyyy/mm/dd)                                        |
+| reg_date_domestic | Registration date (YYYY/MM/DD)                                        |
 | veh_category      | UNECE vehicle category e.g. M1                                        |
-| mileage           | Odometer reading from technical inspection (km)                         |
+| mileage           | Odometer reading from technical inspection (km)                       |
 
 : Table 1. Required data fields for the production of the automated summary report.
 
